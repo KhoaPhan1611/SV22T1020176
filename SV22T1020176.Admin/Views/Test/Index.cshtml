@@ -1,0 +1,67 @@
+﻿@model SV22T1020176.Models.Common.PagedResult<SV22T1020176.Models.Partner.Customer>
+@{
+    ViewData["Title"] = "Test Phân Trang Khách Hàng";
+}
+
+<div class="container mt-4">
+    <h2>Danh sách khách hàng (Test Phân Trang)</h2>
+
+    <form method="get" action="/Test/Index" class="mb-3">
+        <div class="row">
+            <div class="col-md-9">
+                <input type="text" name="SearchValue" class="form-control" placeholder="Tìm tên khách hàng hoặc tên giao dịch..." value="@Context.Request.Query["SearchValue"]" />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+            </div>
+        </div>
+        <input type="hidden" name="PageSize" value="@Model.PageSize" />
+    </form>
+
+    <p>Tổng số dòng tìm thấy: <strong>@Model.RowCount</strong></p>
+
+    <table class="table table-bordered table-striped table-hover">
+        <thead class="bg-primary text-white">
+            <tr>
+                <th>ID</th>
+                <th>Tên khách hàng</th>
+                <th>Tên giao dịch</th>
+                <th>Địa chỉ</th>
+                <th>Điện thoại</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.DataItems)
+            {
+                <tr>
+                    <td>@item.CustomerID</td>
+                    <td>@item.CustomerName</td>
+                    <td>@item.ContactName</td>
+                    <td>@item.Address (@item.Province)</td>
+                    <td>@item.Phone</td>
+                    <td>@item.Email</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <nav>
+        <ul class="pagination">
+            @foreach (var pageItem in Model.GetDisplayPages())
+            {
+                if (pageItem.Page == 0)
+                {
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                }
+                else
+                {
+                    <li class="page-item @(pageItem.IsCurrent ? "active" : "")">
+                        <a class="page-link" href="/Test/Index?Page=@pageItem.Page&SearchValue=@Context.Request.Query["SearchValue"]&PageSize=@Model.PageSize">@pageItem.Page</a>
+                    </li>
+                }
+            }
+        </ul>
+    </nav>
+</div>

@@ -1,0 +1,92 @@
+﻿@model SV22T1020176.Models.Common.PagedResult<SV22T1020176.Models.Sales.OrderViewInfo>
+@{
+    Layout = null;
+}
+<div class="mb-2 text-muted">
+    Danh sách này có <strong>@Model.RowCount</strong> đơn hàng. Trang <strong>@Model.Page/@Model.PageCount</strong>
+</div>
+
+<div class="card">
+    <div class="card-body p-1">
+        <table class="table table-bordered table-hover mb-0 align-middle">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Ngày đặt hàng</th>
+                    <th>Tên khách hàng</th>
+                    <th>Điện thoại</th>
+                    <th>Ngày duyệt</th>
+                    <th>Nhân viên xử lý</th>
+                    <th class="text-end">Tổng tiền</th>
+                    <th class="text-center" style="width:140px;">Trạng thái</th>
+                    <th class="text-center" style="width:40px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.DataItems)
+                {
+                    var statusBadge = (int)item.Status switch
+                    {
+                        -2 => "badge bg-danger",
+                        -1 => "badge bg-secondary",
+                        1 => "badge bg-warning text-dark",
+                        2 => "badge bg-info",
+                        3 => "badge bg-primary",
+                        4 => "badge bg-success",
+                        _ => "badge bg-secondary"
+                    };
+                    var statusLabel = (int)item.Status switch
+                    {
+                        -2 => "Từ chối",
+                        -1 => "Đã hủy",
+                        1 => "Chờ duyệt",
+                        2 => "Đã duyệt",
+                        3 => "Đang giao",
+                        4 => "Hoàn tất",
+                        _ => "Không xác định"
+                    };
+                    <tr>
+                        <td>@item.OrderTime.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@item.CustomerName</td>
+                        <td>@(string.IsNullOrEmpty(item.CustomerPhone) ? "—" : item.CustomerPhone)</td>
+                        <td>@(item.AcceptTime.HasValue ? item.AcceptTime.Value.ToString("dd/MM/yyyy HH:mm") : "—")</td>
+                        <td>@(string.IsNullOrEmpty(item.EmployeeName) ? "—" : item.EmployeeName)</td>
+                        <td class="text-end">@item.TotalAmount.ToString("#,##0") đ</td>
+                        <td class="text-center">
+                            <span class="@statusBadge">@statusLabel</span>
+                        </td>
+                        <td class="text-center text-nowrap">
+                            <a href="~/Order/Detail/@item.OrderID" class="btn btn-sm btn-primary" title="Chi tiết">
+                                <i class="bi bi-receipt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card-footer">
+        @if (Model.PageCount > 1)
+        {
+            <ul class="pagination justify-content-center mb-0">
+                @foreach (var p in Model.GetDisplayPages())
+                {
+                    if (p.Page == 0)
+                    {
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    }
+                    else if (p.IsCurrent)
+                    {
+                        <li class="page-item active"><span class="page-link">@p.Page</span></li>
+                    }
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="javascript:;" onclick="doSearch(@p.Page)">@p.Page</a>
+                        </li>
+                    }
+                }
+            </ul>
+        }
+    </div>
+</div>

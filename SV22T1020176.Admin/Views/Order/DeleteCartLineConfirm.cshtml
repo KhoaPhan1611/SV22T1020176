@@ -1,0 +1,27 @@
+@model int
+@{
+    Layout = null;
+}
+<div class="modal-header text-bg-danger">
+    <strong class="modal-title">
+        <i class="bi bi-dash-circle me-2"></i>Xóa mặt hàng khỏi giỏ
+    </strong>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    <div class="alert alert-danger d-flex align-items-center">
+        <i class="bi bi-info-circle me-2"></i>
+        Bạn có chắc chắn muốn xóa mặt hàng này khỏi giỏ hàng đang lập không?
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary"
+            onclick="fetch('@Url.Action("RemoveFromCart", "Order")', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'productId=@Model' }).then(function (r) { return r.json(); }).then(function (d) { if (d.success) { var el = document.getElementById('dialogModal'); var m = bootstrap.Modal.getInstance(el); if (m) m.hide(); location.reload(); } else { alert(d.message || 'Không thể xóa mặt hàng'); } });">
+        <i class="bi bi-check"></i> Chấp nhận
+    </button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        Đóng
+    </button>
+</div>

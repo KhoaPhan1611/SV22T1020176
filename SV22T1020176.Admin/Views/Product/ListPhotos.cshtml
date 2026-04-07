@@ -1,0 +1,105 @@
+﻿@using System.Linq
+@using SV22T1020176.Models.Catalog
+@{
+    var standalone = ViewData["ProductListPhotosStandalone"] as bool? == true;
+    Layout = standalone ? "_Layout" : null;
+
+    int productId = 0;
+    var photoList = new List<ProductPhoto>();
+
+    if (Model is Product prod)
+    {
+        productId = prod.ProductID;
+        if (ViewBag.Photos is IEnumerable<ProductPhoto> fromBag)
+            photoList = fromBag.ToList();
+    }
+    else if (Model is IList<ProductPhoto> list)
+    {
+        photoList = list.ToList();
+        productId = ViewBag.ProductID is int pid ? pid : photoList.FirstOrDefault()?.ProductID ?? 0;
+    }
+}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-info card-outline mt-4">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col">
+                        <h6 id="photos" class="mb-0">
+                            <i class="bi bi-camera me-2"></i>
+                            Thư viện ảnh
+                        </h6>
+                    </div>
+                    <div class="col text-end">
+                        @if (productId > 0)
+                        {
+                            <a class="btn btn-sm btn-primary" href="~/Product/CreatePhoto/@productId">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Thêm ảnh
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="badge bg-info-subtle text-primary border border-info-subtle px-3 py-2">
+                                <i class="bi bi-info-circle-fill me-1"></i>
+                                Vui lòng thêm mặt hàng trước khi bổ sung ảnh
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-1">
+                <table class="table table-bordered table-hover mb-0">
+                    <thead class="table-secondary text-center small fw-bold">
+                        <tr>
+                            <th style="width:140px">Ảnh / Chọn file</th>
+                            <th>Mô tả</th>
+                            <th style="width:80px">Thứ tự</th>
+                            <th style="width:50px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="photoTableBody">
+                        @if (productId == 0)
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-5">
+                                    <div class="mb-2"><i class="bi bi-camera fs-1 opacity-25"></i></div>
+                                    <div>Vui lòng <b>Thêm mặt hàng trước</b> để có thể bổ sung các ảnh vào thư viện.</div>
+                                </td>
+                            </tr>
+                        }
+                        else if (photoList.Count == 0)
+                        {
+                            <tr id="noPhotoMsg">
+                                <td colspan="4" class="text-center text-muted py-4 small">Chưa có ảnh nào trong thư viện.</td>
+                            </tr>
+                        }
+                        @foreach (var item in photoList)
+                        {
+                            <tr>
+                                <td class="text-center">
+                                    <img src="@(string.IsNullOrEmpty(item.Photo) ? Url.Content("~/images/products/noproduct.png") : Url.Content("~/images/products/" + item.Photo))"
+                                         class="img-thumbnail"
+                                         style="max-height:80px;" alt="@item.Description" />
+                                </td>
+                                <td class="align-middle">@item.Description</td>
+                                <td class="text-center align-middle">@item.DisplayOrder</td>
+                                <td class="text-center align-middle text-nowrap">
+                                    <a class="btn btn-sm btn-primary" href="~/Product/EditPhoto/@productId?photoId=@item.PhotoID">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-danger" href="~/Product/DeletePhoto/@productId?photoId=@item.PhotoID">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+

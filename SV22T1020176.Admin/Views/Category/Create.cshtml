@@ -1,0 +1,57 @@
+﻿@model SV22T1020176.Models.Catalog.Category
+@{
+    // ViewBag.Title removed - title shown only in card header, not in page toolbar
+}
+@section PageToolBar {
+    <button type="submit" form="formCreate" class="btn btn-primary">
+        <i class="bi bi-save"></i>
+        Lưu dữ liệu
+    </button>
+    <a href="~/Category" class="btn btn-secondary ms-1">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
+}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-tags me-2"></i>
+                    Thông tin loại hàng
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <form id="formCreate" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Tên loại hàng</label>
+                        <input type="text"
+                               class="form-control"
+                               name="CategoryName"
+                               placeholder="Nhập tên loại hàng"
+                               value="@Model.CategoryName"
+                               required maxlength="255"
+                               autofocus
+                               oninvalid="this.setCustomValidity('Vui lòng nhập tên loại hàng')"
+                               oninput="this.setCustomValidity('')" />
+                        @Html.ValidationMessage("CategoryName", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea class="form-control"
+                                  name="Description"
+                                  rows="4"
+                                  placeholder="Nhập mô tả loại hàng"
+                                  maxlength="255">@Model.Description</textarea>
+                    </div>
+
+                    <div class="text-danger">
+                        @Html.ValidationSummary(true)
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

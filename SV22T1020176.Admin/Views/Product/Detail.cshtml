@@ -1,0 +1,205 @@
+﻿@model SV22T1020176.Models.Catalog.Product
+@{
+    ViewBag.Title = "Chi tiết mặt hàng";
+}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                <h3 class="card-title">Hồ sơ mặt hàng: <span class="text-primary">@Model.ProductName</span></h3>
+                @if (Model.IsSelling)
+                {
+                    <span class="badge text-bg-success-subtle text-success border border-success-subtle px-3 py-2">Đang kinh doanh</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2">Ngừng kinh doanh</span>
+                }
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-borderless mb-0">
+                    <tbody class="border-top-0">
+                        <tr class="border-bottom">
+                            <td class="bg-light fw-semibold text-muted ps-4" style="width:250px;">Mã mặt hàng (SKU)</td>
+                            <td class="ps-4 fw-bold text-dark">@Model.ProductID</td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td class="bg-light fw-semibold text-muted ps-4">Tên mặt hàng</td>
+                            <td class="ps-4">@Model.ProductName</td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td class="bg-light fw-semibold text-muted ps-4">Loại hàng</td>
+                            <td class="ps-4">@ViewBag.CategoryName</td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td class="bg-light fw-semibold text-muted ps-4">Nhà cung cấp</td>
+                            <td class="ps-4">@ViewBag.SupplierName</td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td class="bg-light fw-semibold text-muted ps-4">Giá bán</td>
+                            <td class="ps-4"><h4 class="mb-0 fw-bold text-primary">@Model.Price.ToString("N0") đ</h4></td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td class="bg-light fw-semibold text-muted ps-4">Đơn vị tính</td>
+                            <td class="ps-4">@Model.Unit</td>
+                        </tr>
+                        <tr>
+                            <td class="bg-light fw-semibold text-muted ps-4">Mô tả</td>
+                            <td class="ps-4 text-muted py-3">@Model.ProductDescription</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white p-3">
+                <a href="~/Product/Edit/@Model.ProductID" class="btn btn-primary px-4 me-2">
+                    <i class="bi bi-pencil-square me-2"></i> Chỉnh sửa thông tin
+                </a>
+                <a href="~/Product" class="btn btn-light border px-4">
+                    Quay lại danh sách
+                </a>
+            </div>
+        </div>
+
+        @* Danh sách thuộc tính *@
+        @if (ViewBag.Attributes != null && ((List<SV22T1020176.Models.Catalog.ProductAttribute>)ViewBag.Attributes).Count > 0)
+        {
+            var attributes = (List<SV22T1020176.Models.Catalog.ProductAttribute>)ViewBag.Attributes;
+            <div class="card card-success card-outline mt-4">
+                <div class="card-header">
+                    <div class="row w-100">
+                        <div class="col">
+                            <h6 class="mb-0">
+                                <i class="bi bi-list-check me-2"></i>
+                                Thuộc tính mặt hàng (@attributes.Count)
+                            </h6>
+                        </div>
+                        <div class="col text-end">
+                            <a class="btn btn-sm btn-primary" href="~/Product/CreateAttribute/@Model.ProductID">
+                                <i class="bi bi-plus-circle me-1"></i> Thêm thuộc tính
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-1">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Tên thuộc tính</th>
+                                <th>Giá trị</th>
+                                <th class="text-center" style="width:120px">Thứ tự</th>
+                                <th class="text-center" style="width:100px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in attributes)
+                            {
+                                <tr>
+                                    <td>@item.AttributeName</td>
+                                    <td>@item.AttributeValue</td>
+                                    <td class="text-center">@item.DisplayOrder</td>
+                                    <td class="text-center text-nowrap">
+                                        <a class="btn btn-sm btn-primary" href="~/Product/EditAttribute/@Model.ProductID?attributeId=@item.AttributeID">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-danger" href="~/Product/DeleteAttribute/@Model.ProductID?attributeId=@item.AttributeID">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @* Danh sách ảnh *@
+        @if (ViewBag.Photos != null && ((List<SV22T1020176.Models.Catalog.ProductPhoto>)ViewBag.Photos).Count > 0)
+        {
+            var photos = (List<SV22T1020176.Models.Catalog.ProductPhoto>)ViewBag.Photos;
+            <div class="card card-info card-outline mt-4">
+                <div class="card-header">
+                    <div class="row w-100">
+                        <div class="col">
+                            <h6 class="mb-0">
+                                <i class="bi bi-images me-2"></i>
+                                Thư viện ảnh (@photos.Count)
+                            </h6>
+                        </div>
+                        <div class="col text-end">
+                            <a class="btn btn-sm btn-primary" href="~/Product/CreatePhoto/@Model.ProductID">
+                                <i class="bi bi-plus-circle me-1"></i> Thêm ảnh
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-1">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th style="width:120px">Ảnh</th>
+                                <th>Mô tả</th>
+                                <th class="text-center" style="width:120px">Thứ tự</th>
+                                <th class="text-center" style="width:120px">Hiển thị</th>
+                                <th class="text-center" style="width:100px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in photos)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        <img src="@(string.IsNullOrEmpty(item.Photo) ? "/images/products/noproduct.png" : "/images/products/" + item.Photo)"
+                                             class="img-thumbnail" style="max-height:80px;" alt="@item.Description" />
+                                    </td>
+                                    <td>@item.Description</td>
+                                    <td class="text-center">@item.DisplayOrder</td>
+                                    <td class="text-center">
+                                        @if (item.IsHidden)
+                                        {
+                                            <span class="badge bg-secondary">Ẩn</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Hiện</span>
+                                        }
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        <a class="btn btn-sm btn-primary" href="~/Product/EditPhoto/@Model.ProductID?photoId=@item.PhotoID">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-danger" href="~/Product/DeletePhoto/@Model.ProductID?photoId=@item.PhotoID">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4 overflow-hidden">
+            <div class="card-header bg-white">
+                <h3 class="card-title">Hình ảnh đại diện</h3>
+            </div>
+            <div class="card-body p-0 text-center bg-light border-bottom">
+                <img src="@(string.IsNullOrEmpty(Model.Photo) ? "/images/products/noproduct.png" : "/images/products/" + Model.Photo)"
+                     class="img-fluid" alt="@Model.ProductName" />
+            </div>
+        </div>
+
+        <div class="card border-danger-subtle bg-danger-subtle bg-opacity-10">
+            <div class="card-body">
+                <h6 class="text-danger fw-bold mb-2">Vùng nguy hiểm</h6>
+                <p class="small text-muted mb-3">Xóa sản phẩm sẽ gỡ bỏ toàn bộ lịch sử giá và thuộc tính liên quan.</p>
+                <a href="~/Product/Delete/@Model.ProductID" class="btn btn-sm btn-outline-danger w-100">
+                    <i class="bi bi-trash me-2"></i> Xóa vĩnh viễn mặt hàng
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

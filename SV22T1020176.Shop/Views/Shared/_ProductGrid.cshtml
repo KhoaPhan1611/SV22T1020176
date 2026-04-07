@@ -1,0 +1,139 @@
+@using SV22T1020176.Models.Catalog
+@using SV22T1020176.Models.Common
+@model PagedResult<Product>
+@{
+    Layout = null;
+}
+<div class="js-paged-meta d-none" data-row-count="@Model.RowCount" aria-hidden="true"></div>
+
+@if (Model.DataItems.Count == 0)
+{
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-search display-1 text-muted opacity-25"></i>
+        </div>
+        <h4 class="fw-bold">Không tìm thấy kết quả nào</h4>
+        <p class="text-muted mx-auto" style="max-width:400px;">Rất tiếc, chúng tôi không tìm thấy mặt hàng nào phù hợp với bộ lọc và từ khóa của bạn.</p>
+        <button onclick="resetFilter()" class="btn btn-primary rounded-pill px-4 mt-3">
+            <i class="bi bi-arrow-counterclockwise me-2"></i> Thử lại
+        </button>
+    </div>
+}
+else
+{
+    <div class="row g-4 animate-in">
+        @foreach (var p in Model.DataItems)
+        {
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm overflow-hidden hover-lift transition-all">
+                    <div class="position-relative">
+                        <a href="/Product/Detail/@p.ProductID" class="d-block overflow-hidden" style="aspect-ratio: 1/1;">
+                            @if (string.IsNullOrEmpty(p.Photo))
+                            {
+                                <img src="https://placehold.co/400x400/fff7ed/f97316?text=@(Uri.EscapeDataString(p.ProductName))"
+                                     class="card-img-top w-100 h-100 object-fit-cover transition-all"
+                                     alt="@p.ProductName" />
+                            }
+                            else if (p.Photo.StartsWith("http"))
+                            {
+                                <img src="@p.Photo" class="card-img-top w-100 h-100 object-fit-cover transition-all" alt="@p.ProductName" />
+                            }
+                            else
+                            {
+                                <img src="~/images/products/@p.Photo" class="card-img-top w-100 h-100 object-fit-cover transition-all" alt="@p.ProductName" />
+                            }
+                            
+                            @if (!p.IsSelling)
+                            {
+                                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50">
+                                    <span class="badge bg-danger px-3 py-2 fs-7 uppercase">Ngừng bán</span>
+                                </div>
+                            }
+                        </a>
+                        <div class="position-absolute bottom-0 end-0 m-2">
+                             <span class="badge bg-light text-dark shadow-sm px-2 py-1 fs-8">@p.Unit</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body d-flex flex-column p-3">
+                        <h6 class="card-title mb-2 text-truncate-2" style="height: 2.8rem;">
+                            <a href="/Product/Detail/@p.ProductID" class="text-decoration-none text-dark fw-600 fs-7">@p.ProductName</a>
+                        </h6>
+                        
+                        <div class="mt-auto">
+                            <p class="text-primary fw-800 fs-5 mb-0">
+                                @p.Price.ToString("N0") <small class="fs-7 fw-normal">đ</small>
+                            </p>
+                            
+                            @if (p.IsSelling == true)
+                            {
+                                <button type="button" onclick="addToCart(@p.ProductID)"
+                                        class="btn btn-primary w-100 mt-3 rounded-pill py-2 shadow-sm fs-7 fw-600">
+                                    <i class="bi bi-cart-plus me-1"></i> Thêm vào giỏ
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.PageCount > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-5 border-top pt-4">
+            <ul class="pagination justify-content-center gap-1 border-0">
+                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link border-0 rounded-circle text-muted" href="javascript:void(0)" onclick="doSearch(@(Model.Page - 1))">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                @{
+                    int winSize = 5;
+                    int start = Math.Max(1, Model.Page - winSize / 2);
+                    int end = Math.Min(Model.PageCount, start + winSize - 1);
+                    if (end - start + 1 < winSize) start = Math.Max(1, end - winSize + 1);
+                }
+
+                @if (start > 1)
+                {
+                    <li class="page-item"><a class="page-link border-0 rounded-circle" href="javascript:void(0)" onclick="doSearch(1)">1</a></li>
+                    @if (start > 2) { <li class="page-item disabled"><span class="page-link border-0">...</span></li> }
+                }
+
+                @for (int p = start; p <= end; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link border-0 rounded-circle fw-600" href="javascript:void(0)" onclick="doSearch(@p)">@p</a>
+                    </li>
+                }
+
+                @if (end < Model.PageCount)
+                {
+                    @if (end < Model.PageCount - 1) { <li class="page-item disabled"><span class="page-link border-0">...</span></li> }
+                    <li class="page-item"><a class="page-link border-0 rounded-circle" href="javascript:void(0)" onclick="doSearch(@Model.PageCount)">@Model.PageCount</a></li>
+                }
+
+                <li class="page-item @(Model.Page >= Model.PageCount ? "disabled" : "")">
+                    <a class="page-link border-0 rounded-circle text-muted" href="javascript:void(0)" onclick="doSearch(@(Model.Page + 1))">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+}
+
+<style>
+    .text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .transition-all { transition: all 0.3s ease; }
+    .fs-8 { font-size: 0.75rem; }
+    .fw-800 { font-weight: 800; }
+    .object-fit-cover { object-fit: cover; }
+    .card:hover img { transform: scale(1.05); }
+    .pagination .page-link { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .pagination .page-item.active .page-link { background-color: var(--cui-primary); color: #fff; }
+</style>

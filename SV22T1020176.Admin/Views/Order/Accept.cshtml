@@ -1,0 +1,41 @@
+﻿@model SV22T1020176.Models.Sales.OrderViewInfo
+@{
+    Layout = null;
+}
+<div class="modal-header text-bg-info">
+    <strong class="modal-title">
+        <i class="bi bi-check-circle me-2"></i>Duyệt đơn hàng #@Model.OrderID
+    </strong>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    <div class="alert alert-info d-flex align-items-center">
+        <i class="bi bi-info-circle me-2"></i>
+        Bạn có chắc chắn muốn duyệt đơn hàng này không?
+    </div>
+
+    <dl class="row mb-0">
+        <dt class="col-sm-4 text-muted">Khách hàng</dt>
+        <dd class="col-sm-8">@Model.CustomerName</dd>
+
+        <dt class="col-sm-4 text-muted">Ngày đặt</dt>
+        <dd class="col-sm-8">@Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</dd>
+
+        <dt class="col-sm-4 text-muted">Tổng tiền</dt>
+        <dd class="col-sm-8 fw-bold text-danger">@Model.TotalAmount.ToString("N0") ₫</dd>
+
+        <dt class="col-sm-4 text-muted">Địa chỉ giao</dt>
+        <dd class="col-sm-8">@Model.DeliveryAddress, @Model.DeliveryProvince</dd>
+    </dl>
+</div>
+
+<div class="modal-footer">
+    <form method="post" action="~/Order/Accept/@Model.OrderID" class="d-inline">
+        <input type="hidden" name="confirm" value="yes" />
+        <button type="submit" class="btn btn-primary me-2">
+            <i class="bi bi-check me-1"></i> Duyệt đơn hàng
+        </button>
+    </form>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+</div>

@@ -1,0 +1,48 @@
+﻿@model SV22T1020176.Models.Sales.OrderViewInfo
+@{
+    Layout = null;
+    var shippers = ViewBag.Shippers as IEnumerable<SV22T1020176.Models.Partner.Shipper> ?? Enumerable.Empty<SV22T1020176.Models.Partner.Shipper>();
+}
+<div class="modal-header text-bg-info">
+    <strong class="modal-title">
+        <i class="bi bi-bicycle me-2"></i>Chuyển giao đơn hàng #@Model.OrderID
+    </strong>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    <dl class="row mb-3">
+        <dt class="col-sm-4 text-muted">Khách hàng</dt>
+        <dd class="col-sm-8">@Model.CustomerName</dd>
+
+        <dt class="col-sm-4 text-muted">Địa chỉ giao</dt>
+        <dd class="col-sm-8">@Model.DeliveryAddress, @Model.DeliveryProvince</dd>
+
+        <dt class="col-sm-4 text-muted">Tổng tiền</dt>
+        <dd class="col-sm-8 fw-bold text-danger">@Model.TotalAmount.ToString("N0") ₫</dd>
+    </dl>
+
+    <form method="post" action="~/Order/Shipping/@Model.OrderID" id="formShipping">
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label fw-semibold">Người giao hàng <span class="text-danger">*</span></label>
+                <select name="shipperID" class="form-select" required
+                        oninvalid="this.setCustomValidity('Vui lòng chọn người giao hàng')"
+                        onchange="this.setCustomValidity('')">
+                    <option value="">-- Chọn người giao hàng --</option>
+                    @foreach (var s in shippers)
+                    {
+                        <option value="@s.ShipperID">@s.ShipperName — @s.Phone</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button type="submit" form="formShipping" class="btn btn-primary me-2">
+        <i class="bi bi-bicycle me-1"></i> Giao hàng
+    </button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+</div>

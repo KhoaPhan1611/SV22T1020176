@@ -1,0 +1,244 @@
+@model SV22T1020176.Models.Partner.Customer
+@{
+    ViewData["Title"] = "Đăng ký thành viên";
+    Layout = null;
+    var returnUrl = ViewBag.ReturnUrl ?? Context.Request.Query["returnUrl"].ToString();
+}
+
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SV22T1020176.Shop</title>
+    <!-- CoreUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@@coreui/coreui@@5.0.0/dist/css/coreui.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/coreui-orange.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Outfit', sans-serif;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.05) 0px, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .register-container {
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+            padding: 2rem;
+        }
+        .register-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            overflow: hidden;
+            padding: 3rem;
+        }
+        .brand-logo {
+            font-weight: 900;
+            color: #1e293b;
+            font-size: 1.5rem;
+            text-decoration: none;
+            letter-spacing: -0.03em;
+        }
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 0.6rem;
+            padding-left: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .form-control, .form-select {
+            border-radius: 1rem;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid #f1f5f9;
+            background-color: #f8fafc;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--cui-primary);
+            box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.1);
+            background-color: #fff;
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cui-primary), #fb923c);
+            border: none;
+            border-radius: 1rem;
+            padding: 1rem;
+            font-weight: 800;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px -5px rgba(249, 115, 22, 0.5);
+            background: linear-gradient(135deg, #ea580c, #f97316);
+        }
+        .animate-in { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        .fs-8 { font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+    <div class="register-container">
+        <div class="register-card animate-in">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <a href="/" class="brand-logo mb-2 d-inline-block">
+                    ORANGE<span class="text-primary">SHOP</span>
+                </a>
+                <h2 class="fw-800 text-dark">Tham gia với chúng tôi</h2>
+                <p class="text-muted fw-500 fs-7">Vui lòng điền thông tin để bắt đầu trải nghiệm mua sắm</p>
+            </div>
+
+            <!-- Validation -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger border-0 rounded-4 p-3 mb-4 d-flex align-items-center gap-3">
+                    <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                    <div class="fs-8 fw-600">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <span class="d-block">@error.ErrorMessage</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <form id="registerForm" action="~/Account/CreateAccount" method="post" class="text-start">
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                <div class="row g-4 mb-4">
+                    <!-- Full Name -->
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="form-label">Họ và tên thành viên <span class="text-danger small fw-normal" id="error-CustomerName"></span></label>
+                            <input type="text" id="CustomerName" name="CustomerName" value="@Model?.CustomerName" placeholder="Ví dụ: Nguyễn Văn A" class="form-control" />
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Email <span class="text-danger small fw-normal" id="error-Email"></span></label>
+                            <input type="email" id="Email" name="Email" value="@Model?.Email" placeholder="email@@vidu.com" class="form-control" />
+                        </div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Số điện thoại <span class="text-danger small fw-normal" id="error-Phone"></span></label>
+                            <input type="tel" id="Phone" name="Phone" value="@Model?.Phone" placeholder="0xxx xxx xxx" class="form-control" />
+                        </div>
+                    </div>
+
+                    <!-- Province -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Tỉnh / Thành phố <span class="text-danger small fw-normal" id="error-Province"></span></label>
+                            <select id="Province" name="Province" class="form-select">
+                                <option value="">-- Chọn Tỉnh/Thành --</option>
+                                @foreach (var p in await SV22T1020176.BusinessLayers.DictionaryDataService.ListProvincesAsync())
+                                {
+                                    <option value="@p.ProvinceName" selected="@(p.ProvinceName == Model?.Province)">@p.ProvinceName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Địa chỉ liên hệ <span class="text-danger small fw-normal" id="error-Address"></span></label>
+                            <input type="text" id="Address" name="Address" value="@Model?.Address" placeholder="Số nhà, tên đường..." class="form-control" />
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Mật khẩu mới <span class="text-danger small fw-normal" id="error-Password"></span></label>
+                            <input type="password" id="Password" name="Password" placeholder="Tối thiểu 6 ký tự" class="form-control" />
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Xác nhận mật khẩu <span class="text-danger small fw-normal" id="error-confirmPassword"></span></label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 fs-6 fw-bold">
+                    TẠO TÀI KHOẢN NGAY <i class="bi bi-person-plus-fill ms-2"></i>
+                </button>
+
+                <div class="text-center mt-5 pt-3 border-top">
+                    <p class="text-muted fs-8 fw-600">
+                        Bạn đã là thành viên? <a href="~/Account/Authenticate?returnUrl=@returnUrl" class="text-primary text-decoration-none fw-bold ms-1">Đăng nhập ngay</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@@coreui/coreui@@5.0.0/dist/js/coreui.bundle.min.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function (e) {
+            let hasError = false;
+            const showError = (id, msg) => {
+                const errSpan = document.getElementById('error-' + id);
+                const input = document.getElementById(id);
+                if (errSpan) errSpan.textContent = '(' + msg + ')';
+                if (input) input.classList.add('is-invalid');
+                hasError = true;
+            };
+            const clearError = (id) => {
+                const errSpan = document.getElementById('error-' + id);
+                const input = document.getElementById(id);
+                if (errSpan) errSpan.textContent = '';
+                if (input) input.classList.remove('is-invalid');
+            };
+
+            ['CustomerName', 'Email', 'Phone', 'Address', 'Province', 'Password', 'confirmPassword'].forEach(clearError);
+
+            const name = document.getElementById('CustomerName').value.trim();
+            const email = document.getElementById('Email').value.trim();
+            const phone = document.getElementById('Phone').value.trim();
+            const address = document.getElementById('Address').value.trim();
+            const province = document.getElementById('Province').value;
+            const pass = document.getElementById('Password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (!name) showError('CustomerName', 'Yêu cầu tên');
+            if (!email) showError('Email', 'Yêu cầu Email');
+            if (!phone) showError('Phone', 'Yêu cầu SĐT');
+            if (!address) showError('Address', 'Yêu cầu địa chỉ');
+            if (!province) showError('Province', 'Yêu cầu tỉnh/thành');
+            if (pass.length < 6) showError('Password', 'Mật khẩu cần ≥ 6 ký tự');
+            if (pass !== confirm) showError('confirmPassword', 'Mật khẩu không khớp');
+
+            if (hasError) e.preventDefault();
+        });
+    </script>
+</body>
+</html>

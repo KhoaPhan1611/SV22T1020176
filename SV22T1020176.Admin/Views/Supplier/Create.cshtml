@@ -1,0 +1,139 @@
+﻿@model SV22T1020176.Models.Partner.Supplier
+@{
+    // ViewBag.Title removed - title shown only in card header, not in page toolbar
+}
+@section PageToolBar {
+    <button type="submit" form="formCreate" class="btn btn-primary">
+        <i class="bi bi-save"></i>
+        Lưu dữ liệu
+    </button>
+    <a href="~/Supplier" class="btn btn-secondary ms-1">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
+}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-truck me-2"></i>
+                    Thông tin nhà cung cấp
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <form id="formCreate" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Tên nhà cung cấp</label>
+                        <input type="text"
+                               class="form-control"
+                               name="SupplierName"
+                               placeholder="Nhập tên nhà cung cấp"
+                               value="@Model.SupplierName"
+                               required maxlength="255"
+                               autofocus
+                               oninvalid="this.setCustomValidity('Vui lòng nhập tên nhà cung cấp')"
+                               oninput="this.setCustomValidity('')" />
+                        @Html.ValidationMessage("SupplierName", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tên giao dịch</label>
+                        <input type="text"
+                               class="form-control"
+                               name="ContactName"
+                               placeholder="Nhập tên giao dịch"
+                               value="@Model.ContactName"
+                               required maxlength="255"
+                               oninvalid="this.setCustomValidity('Vui lòng nhập tên giao dịch')"
+                               oninput="this.setCustomValidity('')" />
+                        @Html.ValidationMessage("ContactName", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Điện thoại</label>
+                            <input type="tel"
+                                   class="form-control"
+                                   name="Phone"
+                                   placeholder="Nhập số điện thoại"
+                                   value="@Model.Phone"
+                                   required maxlength="20"
+                                   pattern="[0-9]{9,15}"
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập số điện thoại')"
+                                   oninput="this.setCustomValidity('')" />
+                            @Html.ValidationMessage("Phone", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email"
+                                   class="form-control"
+                                   name="Email"
+                                   placeholder="Nhập email"
+                                   value="@Model.Email"
+                                   required maxlength="255"
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập email')"
+                                   oninput="this.setCustomValidity('')" />
+                            @Html.ValidationMessage("Email", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Địa chỉ</label>
+                        <textarea class="form-control"
+                                  name="Address"
+                                  rows="3"
+                                  placeholder="Nhập địa chỉ"
+                                  required maxlength="255">@Model.Address</textarea>
+                        @Html.ValidationMessage("Address", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tỉnh / Thành</label>
+                        <select class="form-select" name="Province" required oninvalid="this.setCustomValidity('Vui lòng chọn tỉnh/thành')" oninput="this.setCustomValidity('')">
+                            <option value="">-- Chọn tỉnh / thành --</option>
+                            @if (ViewBag.Provinces != null)
+                            {
+                                foreach (var item in ViewBag.Provinces)
+                                {
+                                    if (item.ProvinceName == Model.Province)
+                                    {
+                                        <option value="@item.ProvinceName" selected>@item.ProvinceName</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@item.ProvinceName">@item.ProvinceName</option>
+                                    }
+                                }
+                            }
+                        </select>
+                        @Html.ValidationMessage("Province", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="text-danger">
+                        @Html.ValidationSummary(true)
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Khi người dùng nhập liệu vào bất kỳ ô nào có báo lỗi
+            $('input, textarea, select').on('input change', function () {
+                const fieldName = $(this).attr('name');
+                if (fieldName) {
+                    // Tìm thẻ span báo lỗi tương ứng với name của input và xóa nội dung
+                    $(`span[data-valmsg-for="${fieldName}"]`).text('');
+                    // Nếu dùng Html.ValidationMessage mà không có data-val, ta tìm em hoặc span text-danger ngay sau nó
+                    $(this).siblings('.text-danger').text('');
+                }
+            });
+        });
+    </script>
+}

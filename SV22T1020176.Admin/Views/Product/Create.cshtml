@@ -1,0 +1,194 @@
+﻿@model SV22T1020176.Models.Catalog.Product
+@{
+    ViewBag.Title = "Bổ sung mặt hàng";
+}
+@{
+    var categories = ViewBag.Categories as SV22T1020176.Models.Common.PagedResult<SV22T1020176.Models.Catalog.Category>;
+    var suppliers = ViewBag.Suppliers as SV22T1020176.Models.Common.PagedResult<SV22T1020176.Models.Partner.Supplier>;
+}
+@section PageToolBar {
+    <button type="submit" form="formCreate" class="btn btn-primary">
+        <i class="bi bi-save"></i>
+        Lưu dữ liệu
+    </button>
+    <a href="~/Product" class="btn btn-secondary ms-1">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
+}
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-box-seam me-2"></i>
+                    Thông tin mặt hàng
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <form id="formCreate" method="post" enctype="multipart/form-data">
+                    @* ProductID hidden is optional for Create but good for consistency *@
+                    <input type="hidden" name="ProductID" value="0" />
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Tên mặt hàng</label>
+                        <div class="col-sm-9">
+                            <input type="text"
+                                   class="form-control"
+                                   name="ProductName"
+                                   placeholder="Nhập tên mặt hàng" autofocus
+                                   value="@Model.ProductName"
+                                   required maxlength="255"
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập tên mặt hàng')"
+                                   oninput="this.setCustomValidity('')" />
+                            @Html.ValidationMessage("ProductName", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Loại hàng</label>
+                        <div class="col-sm-3">
+                            <select class="form-select" name="CategoryID" required
+                                    oninvalid="this.setCustomValidity('Vui lòng chọn loại hàng')"
+                                    onchange="this.setCustomValidity('')">
+                                <option value="">-- Chọn loại hàng --</option>
+                                @if (categories != null)
+                                {
+                                    foreach (var item in categories.DataItems)
+                                    {
+                                        if (item.CategoryID == Model.CategoryID)
+                                        {
+                                            <option value="@item.CategoryID" selected>@item.CategoryName</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@item.CategoryID">@item.CategoryName</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                            @Html.ValidationMessage("CategoryID", new { @class = "text-danger" })
+                        </div>
+
+                        <label class="col-sm-2 col-form-label text-end">Nhà cung cấp</label>
+                        <div class="col-sm-4">
+                            <select class="form-select" name="SupplierID" required
+                                    oninvalid="this.setCustomValidity('Vui lòng chọn nhà cung cấp')"
+                                    onchange="this.setCustomValidity('')">
+                                <option value="">-- Chọn nhà cung cấp --</option>
+                                @if (suppliers != null)
+                                {
+                                    foreach (var item in suppliers.DataItems)
+                                    {
+                                        if (item.SupplierID == Model.SupplierID)
+                                        {
+                                            <option value="@item.SupplierID" selected>@item.SupplierName</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@item.SupplierID">@item.SupplierName</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                            @Html.ValidationMessage("SupplierID", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Đơn vị tính</label>
+                        <div class="col-sm-3">
+                            <input type="text"
+                                   class="form-control"
+                                   name="Unit"
+                                   placeholder="cái, hộp, kg..."
+                                   value="@Model.Unit"
+                                   required maxlength="255"
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập đơn vị tính')"
+                                   oninput="this.setCustomValidity('')" />
+                        </div>
+
+                        <label class="col-sm-2 col-form-label text-end">Giá</label>
+                        <div class="col-sm-4">
+                            <input type="text"
+                                   class="form-control money-input"
+                                   name="Price"
+                                   placeholder="Giá bán"
+                                   value="@(Model.Price > 0 ? Model.Price.ToString("0") : "")"
+                                   required min="0"
+                                   oninvalid="this.setCustomValidity('Vui lòng nhập giá bán')"
+                                   oninput="this.setCustomValidity('')" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Trạng thái</label>
+                        <div class="col-sm-9">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="IsSelling"
+                                       value="true"
+                                       @(Model.IsSelling ? "checked" : "")
+                                       id="IsSelling" />
+                                <label class="form-check-label" for="IsSelling">
+                                    Đang bán
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Ảnh</label>
+                        <div class="col-sm-9">
+                            <input type="hidden" name="Photo" value="" />
+                            <input type="file"
+                                   class="form-control"
+                                   name="photoFile"
+                                   accept="image/*"
+                                   data-img-preview="imgPreviewProduct"
+                                   onchange="previewImage(this)"
+                                   required
+                                   oninvalid="this.setCustomValidity('Vui lòng chọn ảnh cho mặt hàng')"
+                                   oninput="this.setCustomValidity('')" />
+                            <div class="form-text">Chọn ảnh đại diện của mặt hàng.</div>
+                            @Html.ValidationMessage("Photo", new { @class = "text-danger" })
+                            <div class="mt-2">
+                                <img id="imgPreviewProduct"
+                                     src="~/images/products/nophoto.png"
+                                     class="img-thumbnail bg-light"
+                                     style="max-height: 160px;"
+                                     alt="Ảnh đại diện" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Mô tả</label>
+                        <div class="col-sm-9">
+                            <textarea class="form-control"
+                                      name="ProductDescription"
+                                      rows="3"
+                                      placeholder="Nhập mô tả mặt hàng"
+                                      maxlength="2000"
+                                      required
+                                      oninvalid="this.setCustomValidity('Vui lòng nhập mô tả mặt hàng')"
+                                      oninput="this.setCustomValidity('')">@Model.ProductDescription</textarea>
+                            @Html.ValidationMessage("ProductDescription", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="text-danger">
+                        @Html.ValidationSummary(true)
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("ListPhotos")
+@await Html.PartialAsync("ListAttributes")

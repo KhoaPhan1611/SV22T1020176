@@ -1,0 +1,298 @@
+@model SV22T1020176.Models.Partner.Customer
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+}
+
+<div class="animate-in">
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-5 border-bottom pb-4">
+        <div>
+            <h1 class="fw-800 text-dark display-6 mb-1">Tài khoản của tôi</h1>
+            <p class="text-muted fw-500 mb-0 px-1">Quản lý thông tin cá nhân và cài đặt bảo mật</p>
+        </div>
+    </div>
+
+    <div class="row g-5">
+        <!-- Sidebar Navigation -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden sticky-top" style="top: 100px;">
+                <div class="p-4 bg-primary bg-opacity-5 border-bottom border-light">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded-circle fs-4 fw-800" style="width: 56px; height: 56px;">
+                            @(Model?.CustomerName?.Length > 0 ? Model.CustomerName.Substring(0, 1).ToUpper() : "U")
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">@(Model?.CustomerName ?? "Người dùng")</h6>
+                            <span class="fs-8 text-muted fw-500">@(Model?.Email)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-2">
+                    <nav class="nav flex-column gap-1">
+                        <a href="#info" class="nav-link profile-nav-item active rounded-3 px-3 py-2 d-flex align-items-center gap-3 fw-600 fs-7 text-primary">
+                            <i class="bi bi-person fs-5"></i> Thông tin cá nhân
+                        </a>
+                        <a href="#password" class="nav-link profile-nav-item rounded-3 px-3 py-2 d-flex align-items-center gap-3 fw-600 fs-7 text-muted">
+                            <i class="bi bi-shield-lock fs-5"></i> Bảo mật & Mật khẩu
+                        </a>
+                        <div class="border-top my-2 mx-3"></div>
+                        <a href="~/Order/History" class="nav-link rounded-3 px-3 py-2 d-flex align-items-center gap-3 fw-600 fs-7 text-muted">
+                            <i class="bi bi-receipt fs-5"></i> Lịch sử mua hàng
+                        </a>
+                        <a href="~/Account/SignOff" class="nav-link rounded-3 px-3 py-2 d-flex align-items-center gap-3 fw-600 fs-7 text-danger">
+                            <i class="bi bi-box-arrow-right fs-5"></i> Đăng xuất
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-lg-9 d-flex flex-column gap-4">
+
+            <!-- Profile Info Section -->
+            <section id="info" class="card border-0 shadow-sm rounded-4 overflow-hidden scroll-mt">
+                <div class="card-header bg-white border-0 py-4 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary-subtle text-primary rounded-pill p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                            <i class="bi bi-person-badge fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Thông tin cá nhân</h5>
+                            <p class="fs-8 text-muted mb-0">Cập nhật thông tin cơ bản và địa chỉ của bạn</p>
+                        </div>
+                    </div>
+                    <button type="submit" form="profileForm" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-check2-circle me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <form id="profileForm" action="~/Account/ReviseProfile" method="post" class="text-start">
+                        <div class="row g-4">
+                            <!-- Full Name -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2 d-flex justify-content-between">
+                                        Họ và tên <span class="text-danger small fw-normal" id="error-CustomerName"></span>
+                                    </label>
+                                    <input type="text" id="CustomerName" name="CustomerName" value="@Model?.CustomerName" 
+                                           class="form-control border-0 bg-light rounded-3 py-2 ps-3 shadow-none" />
+                                </div>
+                            </div>
+                            <!-- Email (Read-only) -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2">Email (Tài khoản)</label>
+                                    <input type="email" value="@Model?.Email" disabled class="form-control border-0 bg-light-subtle rounded-3 py-2 ps-3 opacity-75" style="cursor: not-allowed;" />
+                                </div>
+                            </div>
+                            <!-- Phone -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2 d-flex justify-content-between">
+                                        Số điện thoại <span class="text-danger small fw-normal" id="error-Phone"></span>
+                                    </label>
+                                    <input type="tel" id="Phone" name="Phone" value="@Model?.Phone" 
+                                           class="form-control border-0 bg-light rounded-3 py-2 ps-3 shadow-none" />
+                                </div>
+                            </div>
+                            <!-- Province -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2">Tỉnh / Thành phố</label>
+                                    <select name="Province" class="form-select border-0 bg-light rounded-3 py-2 ps-3 shadow-none fs-7">
+                                        <option value="">-- Chọn tỉnh/thành --</option>
+                                        @foreach (var province in await SV22T1020176.BusinessLayers.DictionaryDataService.ListProvincesAsync())
+                                        {
+                                            <option value="@province.ProvinceName" selected="@(province.ProvinceName == Model?.Province)">
+                                                @province.ProvinceName
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Address -->
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2">Địa chỉ cụ thể</label>
+                                    <textarea name="Address" rows="3" class="form-control border-0 bg-light rounded-3 py-2 ps-3 shadow-none fs-7" style="resize:none;">@Model?.Address</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Change Password Section -->
+            <section id="password" class="card border-0 shadow-sm rounded-4 overflow-hidden scroll-mt">
+                <div class="card-header bg-white border-0 py-4 px-4 d-flex align-items-center gap-3">
+                    <div class="bg-secondary-subtle text-secondary rounded-pill p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-shield-lock-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">Đổi mật khẩu</h5>
+                        <p class="fs-8 text-muted mb-0">Nên sử dụng mật khẩu mạnh để bảo vệ tài khoản</p>
+                    </div>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <form id="changePasswordForm" action="~/Account/ResetPassphrase" method="post" class="d-flex flex-column gap-4 text-start" style="max-width:500px;">
+                        
+                        <div class="form-group">
+                            <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2 d-flex justify-content-between">
+                                Mật khẩu hiện tại <span class="text-danger small fw-normal" id="error-curPassword"></span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text border-0 bg-light rounded-start-3"><i class="bi bi-lock"></i></span>
+                                <input type="password" id="curPassword" name="curPassword" placeholder="********" required class="form-control border-0 bg-light rounded-end-3 py-2 shadow-none" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2 d-flex justify-content-between">
+                                Mật khẩu mới <span class="text-danger small fw-normal" id="error-newPassword"></span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text border-0 bg-light rounded-start-3"><i class="bi bi-key"></i></span>
+                                <input type="password" id="newPassword" name="newPassword" placeholder="Tối thiểu 6 ký tự" required minlength="6" class="form-control border-0 bg-light rounded-end-3 py-2 shadow-none" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label fs-7 fw-600 text-dark ps-1 mb-2 d-flex justify-content-between">
+                                Xác nhận mật khẩu mới <span class="text-danger small fw-normal" id="error-confirmNewPassword"></span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text border-0 bg-light rounded-start-3"><i class="bi bi-shield-check"></i></span>
+                                <input type="password" id="confirmNewPassword" name="confirmNewPassword" placeholder="Nhập lại mật khẩu mới" required class="form-control border-0 bg-light rounded-end-3 py-2 shadow-none" />
+                            </div>
+                        </div>
+
+                        <div class="mt-2">
+                            <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm">
+                                <i class="bi bi-save me-1"></i> Cập nhật mật khẩu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;"></div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.profile-nav-item').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (this.getAttribute('href').startsWith('#')) {
+                    const targetId = this.getAttribute('href');
+                    const target = document.querySelector(targetId);
+                    if (target) {
+                        e.preventDefault();
+                        document.querySelectorAll('.profile-nav-item').forEach(item => {
+                            item.classList.remove('active', 'text-primary');
+                            item.classList.add('text-muted');
+                        });
+                        this.classList.add('active', 'text-primary');
+                        this.classList.remove('text-muted');
+                        window.scrollTo({ top: target.offsetTop - 120, behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+
+        function showNotification(msg, type = 'success') {
+            const container = document.querySelector('.toast-container');
+            const id = 'toast-' + Date.now();
+            const toastHTML = `
+                <div id="${id}" class="toast align-items-center text-white bg-${type === 'success' ? 'primary' : 'danger'} border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body fw-bold">
+                            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i> ${msg}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto shadow-none" data-coreui-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', toastHTML);
+            const toastElement = document.getElementById(id);
+            const toast = new coreui.Toast(toastElement, { autohide: true, delay: 5000 });
+            toast.show();
+            toastElement.addEventListener('hidden.coreui.toast', () => toastElement.remove());
+        }
+
+        const pfForm = document.getElementById('profileForm');
+        if (pfForm) {
+            pfForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                ['CustomerName', 'Phone'].forEach(id => {
+                    document.getElementById('error-' + id).textContent = '';
+                    document.getElementById(id).classList.remove('is-invalid');
+                });
+
+                const data = new FormData(pfForm);
+                fetch(pfForm.action, {
+                    method: 'POST',
+                    body: new URLSearchParams(data)
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        showNotification(res.message);
+                    } else {
+                        if (res.field) {
+                            document.getElementById('error-' + res.field).textContent = res.message;
+                            document.getElementById(res.field).classList.add('is-invalid');
+                        } else {
+                            showNotification(res.message, 'error');
+                        }
+                    }
+                });
+            });
+        }
+
+        const cpForm = document.getElementById('changePasswordForm');
+        if (cpForm) {
+            cpForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                ['curPassword', 'newPassword', 'confirmNewPassword'].forEach(id => {
+                    document.getElementById('error-' + id).textContent = '';
+                    document.getElementById(id).classList.remove('is-invalid');
+                });
+
+                const data = new FormData(cpForm);
+                fetch(cpForm.action, {
+                    method: 'POST',
+                    body: new URLSearchParams(data)
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        showNotification(res.message);
+                        cpForm.reset();
+                    } else {
+                        if (res.field) {
+                            document.getElementById('error-' + res.field).textContent = res.message;
+                            document.getElementById(res.field).classList.add('is-invalid');
+                        } else {
+                            showNotification(res.message, 'error');
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+}
+
+<style>
+    .scroll-mt { scroll-margin-top: 120px; }
+    .profile-nav-item.active { background-color: var(--cui-primary) !important; color: white !important; }
+    .fs-7 { font-size: 0.875rem; }
+    .fs-8 { font-size: 0.75rem; }
+    .fw-800 { font-weight: 800; }
+    .fw-900 { font-weight: 900; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .bg-light-subtle { background-color: #f1f5f9; }
+</style>

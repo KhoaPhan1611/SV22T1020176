@@ -1,0 +1,74 @@
+﻿@model SV22T1020176.Models.Sales.OrderDetailViewInfo
+@using System.Globalization
+@{
+    Layout = null;
+    string FormatVn(decimal v) => v.ToString("#,##0", CultureInfo.InvariantCulture).Replace(',', '.');
+}
+<div class="modal-header">
+    <strong class="modal-title">
+        <i class="bi bi-pencil me-2"></i>Cập nhật chi tiết đơn hàng
+    </strong>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+</div>
+
+<div class="modal-body">
+    <form id="formEditCartItem"
+          class="container-fluid"
+          method="post"
+          action="@Url.Action("EditCartItem", "Order", new { id = Model.OrderID })"
+          onsubmit="var p=this.querySelector('input[name=salePrice]'); if(p){ var s=(p.value||'').replace(/[^0-9]/g,''); var n=parseInt(s,10); if(isNaN(n)||n&lt;0)n=0; p.value=String(n); } return true;">
+        <input type="hidden" name="productId" value="@Model.ProductID" />
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="row mb-3 align-items-center">
+                    <label class="col-sm-4 col-form-label fw-semibold mb-0">Mặt hàng</label>
+                    <div class="col-sm-8">
+                        <input type="text"
+                               class="form-control-plaintext fw-bold"
+                               value="@Model.ProductName"
+                               readonly
+                               tabindex="-1" />
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <label class="col-sm-4 col-form-label fw-semibold mb-0">Số lượng <span class="text-danger">*</span></label>
+                    <div class="col-sm-5">
+                        <input type="number"
+                               class="form-control text-end"
+                               name="quantity"
+                               min="1"
+                               value="@Model.Quantity"
+                               required />
+                    </div>
+                </div>
+                <div class="row mb-0 align-items-center">
+                    <label class="col-sm-4 col-form-label fw-semibold mb-0">Đơn giá <span class="text-danger">*</span></label>
+                    <div class="col-sm-5">
+                        <input type="text"
+                               class="form-control text-end fw-semibold"
+                               name="salePrice"
+                               value="@FormatVn(Model.SalePrice)"
+                               inputmode="numeric"
+                               autocomplete="off"
+                               required />
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <img src="~/images/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)"
+                     alt="@Model.ProductName"
+                     class="img-thumbnail"
+                     style="max-height:180px"
+                     onerror="this.src='@Url.Content("~/images/products/nophoto.png")'" />
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button type="submit" form="formEditCartItem" class="btn btn-primary me-2">
+        <i class="bi bi-check-lg me-1"></i>Cập nhật
+    </button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+</div>

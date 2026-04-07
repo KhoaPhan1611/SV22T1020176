@@ -1,0 +1,58 @@
+﻿@using SV22T1020176.Admin
+@using SV22T1020176.Models.Constants
+@{
+    var employeeName = Context.Session.GetString("EmployeeName") ?? "Admin";
+    var employeeEmail = Context.Session.GetString("EmployeeEmail") ?? "";
+    var employeeId = Context.Session.GetInt32("EmployeeID");
+    var roleNames = Context.Session.GetString("EmployeeRoles") ?? "";
+    var roles = string.IsNullOrWhiteSpace(roleNames)
+        ? new List<string>()
+        : roleNames.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+    var permissions = new List<string>();
+    foreach (var role in roles)
+    {
+        var perms = Roles.GetPermissions(role);
+        foreach (var perm in perms)
+        {
+            if (!permissions.Contains(perm))
+                permissions.Add(perm);
+        }
+    }
+    bool HasPerm(string p) => permissions.Contains(p);
+}
+<nav class="app-header navbar navbar-expand bg-body-secondary">
+    <div class="container-fluid">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">
+                    <i class="bi bi-list"></i>
+                </a>
+            </li>
+            @if (HasPerm(Permissions.DashboardView))
+            {
+                <li class="nav-item d-none d-md-block"><a href="~/" class="nav-link">Trang chủ</a></li>
+            }
+        </ul>
+        <ul class="navbar-nav ms-auto">
+            <li class="nav-item dropdown user-menu">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                    <img src="~/lib/adminlte/assets/img/avatar2.png" class="user-image rounded-circle shadow" alt="User Image" onerror="this.src='@Url.Content("~/images/products/nophoto.png")'" />
+                    <span class="d-none d-md-inline">@employeeName</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
+                    <li class="user-header text-bg-primary">
+                        <img src="~/lib/adminlte/assets/img/avatar2.png" class="rounded-circle shadow" alt="User Image" onerror="this.src='@Url.Content("~/images/products/nophoto.png")'" />
+                        <p>
+                            @employeeName
+                            <small>@employeeEmail</small>
+                        </p>
+                    </li>
+                    <li class="user-footer">
+                        <a href="~/Account/ChangePassword" class="btn btn-default btn-flat">Đổi mật khẩu</a>
+                        <a href="~/Account/Logout" class="btn btn-default btn-flat float-end">Thoát</a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</nav>

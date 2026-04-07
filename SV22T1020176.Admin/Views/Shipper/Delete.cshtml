@@ -1,0 +1,56 @@
+﻿@model SV22T1020176.Models.Partner.Shipper
+@{
+    ViewBag.Title = "Xóa người giao hàng";
+}
+@section PageToolBar {
+    <button type="submit" form="formDelete" class="btn btn-danger">
+        <i class="bi bi-trash me-1"></i>
+        Xóa
+    </button>
+    <a href="~/Shipper" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
+}
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-danger card-outline">
+            <div class="card-header">
+                <h5 class="card-title mb-0 text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Xác nhận xóa người giao hàng
+                </h5>
+            </div>
+
+            <div class="card-body">
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <form id="formDelete" method="post">
+                    <input type="hidden" name="id" value="@Model.ShipperID" />
+                    <input type="hidden" name="confirm" value="yes" />
+
+                    <div class="alert alert-warning d-flex align-items-center mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Bạn có chắc chắn muốn xóa người giao hàng này không?
+                    </div>
+
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Tên người giao hàng</dt>
+                        <dd class="col-sm-8">@Model.ShipperName</dd>
+
+                        <dt class="col-sm-4">Điện thoại</dt>
+                        <dd class="col-sm-8">@Model.Phone</dd>
+                    </dl>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

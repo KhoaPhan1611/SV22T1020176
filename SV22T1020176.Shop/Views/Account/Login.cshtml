@@ -1,0 +1,236 @@
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = null;
+    var returnUrl = Context.Request.Query["returnUrl"].ToString();
+}
+
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SV22T1020176.Shop</title>
+    <!-- CoreUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@@coreui/coreui@@5.0.0/dist/css/coreui.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/coreui-orange.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Outfit', sans-serif;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.05) 0px, transparent 50%);
+        }
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            overflow: hidden;
+            width: 100%;
+            max-width: 480px;
+            padding: 3rem;
+        }
+        .brand-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--cui-primary);
+            color: white;
+            border-radius: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3);
+        }
+        .login-brand {
+            font-weight: 900;
+            color: #1e293b;
+            font-size: 1.75rem;
+            text-decoration: none;
+            letter-spacing: -0.03em;
+        }
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 0.6rem;
+            padding-left: 0.25rem;
+        }
+        .form-control {
+            border-radius: 1rem;
+            padding: 0.875rem 1.25rem;
+            border: 2px solid #f1f5f9;
+            background-color: #f8fafc;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        .form-control:focus {
+            border-color: var(--cui-primary);
+            box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.1);
+            background-color: #fff;
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cui-primary), #fb923c);
+            border: none;
+            border-radius: 1rem;
+            padding: 1rem;
+            font-weight: 800;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.4);
+            margin-top: 1rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px -5px rgba(249, 115, 22, 0.5);
+            background: linear-gradient(135deg, #ea580c, #f97316);
+        }
+        .btn-primary:active { transform: translateY(0); }
+        
+        .error-bubble {
+            background-color: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        
+        .animate-in { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .register-link {
+            color: var(--cui-primary);
+            font-weight: 800;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .register-link:hover { color: #ea580c; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-card animate-in text-center">
+            <!-- Brand -->
+            <div class="brand-icon">
+                <i class="bi bi-keyboard-fill"></i>
+            </div>
+            <a href="/" class="login-brand mb-1 d-block">
+                ORANGE<span class="text-primary">SHOP</span>
+            </a>
+            <p class="text-muted fw-500 mb-5 fs-7">Vui lòng đăng nhập để tiếp tục</p>
+
+            <!-- Error Notification -->
+            @if (ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="error-bubble text-start">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    <div class="text-danger fw-600 fs-8 lh-base">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <span class="d-block">@error.ErrorMessage</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <form id="loginForm" action="~/Account/Authenticate" method="post" class="d-flex flex-column gap-4 text-start">
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                <!-- Email Input -->
+                <div class="form-group">
+                    <label class="form-label d-flex justify-content-between">
+                        Địa chỉ Email <span class="text-danger small fw-normal" id="error-email"></span>
+                    </label>
+                    <div class="position-relative">
+                        <input type="email" id="emailField" name="email" placeholder="email@@vidu.com" autocomplete="email" autofocus
+                               value="@ViewData["Email"]" class="form-control" />
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="form-group">
+                    <label class="form-label d-flex justify-content-between">
+                        Mật khẩu <span class="text-danger small fw-normal" id="error-password"></span>
+                    </label>
+                    <div class="position-relative">
+                        <input type="password" id="passwordField" name="password" placeholder="••••••••" autocomplete="current-password" class="form-control" />
+                    </div>
+                </div>
+
+                <!-- Remember & Forgot (UI only) -->
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="form-check">
+                        <input class="form-check-input shadow-none" type="checkbox" id="rememberMe">
+                        <label class="form-check-label fs-8 fw-600 text-muted" for="rememberMe">Ghi nhớ</label>
+                    </div>
+                    <a href="#" class="fs-8 fw-700 text-muted text-decoration-none hover-primary">Quên mật khẩu?</a>
+                </div>
+
+                <!-- Log In Button -->
+                <button type="submit" class="btn btn-primary w-100 shadow-sm transition-all">
+                    ĐĂNG NHẬP NGAY <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </form>
+
+            <div class="mt-5 pt-3 border-top border-light">
+                <p class="text-muted fs-8 fw-600 mb-0">
+                    Chưa có tài khoản thành viên?
+                    <a href="~/Account/CreateAccount?returnUrl=@returnUrl" class="register-link ms-1">Đăng ký ngay</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@@coreui/coreui@@5.0.0/dist/js/coreui.bundle.min.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            let hasError = false;
+            const showError = (id, msg) => {
+                const errSpan = document.getElementById('error-' + id);
+                const input = document.getElementById(id + 'Field');
+                if (errSpan) errSpan.textContent = msg;
+                if (input) input.classList.add('is-invalid');
+                hasError = true;
+            };
+            const clearError = (id) => {
+                const errSpan = document.getElementById('error-' + id);
+                const input = document.getElementById(id + 'Field');
+                if (errSpan) errSpan.textContent = '';
+                if (input) input.classList.remove('is-invalid');
+            };
+
+            ['email', 'password'].forEach(clearError);
+
+            const email = document.getElementById('emailField').value.trim();
+            const pass = document.getElementById('passwordField').value;
+
+            if (!email) showError('email', 'Email không được để trống');
+            else if (!email.includes('@@') || !email.includes('.')) showError('email', 'Email không đúng định dạng');
+
+            if (!pass) showError('password', 'Mật khẩu không được để trống');
+
+            if (hasError) e.preventDefault();
+        });
+    </script>
+</body>
+</html>

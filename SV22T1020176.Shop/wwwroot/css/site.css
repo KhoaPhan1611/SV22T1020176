@@ -1,0 +1,107 @@
+/* SV22T1020176.Shop – Custom Utilities & Polish
+   =================================================== */
+
+:root {
+    --transition-standard: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scroll to top ────────────────────────────────────────── */
+#scrollToTop {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    background-color: var(--cui-primary);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: var(--transition-standard);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    font-size: 1.25rem;
+}
+
+#scrollToTop:hover {
+    background-color: #ea580c;
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+}
+
+/* ── Custom Animations ────────────────────────────────────── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Layout Utilities ─────────────────────────────────────── */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+.backdrop-blur {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* ── Typography & Effects ─────────────────────────────────── */
+.text-primary-gradient {
+    background: linear-gradient(135deg, var(--cui-primary), #fb923c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.fs-7 { font-size: 0.875rem !important; }
+.fs-8 { font-size: 0.75rem !important; }
+.fs-9 { font-size: 0.65rem !important; }
+
+.fw-700 { font-weight: 700 !important; }
+.fw-800 { font-weight: 800 !important; }
+.fw-900 { font-weight: 900 !important; }
+
+/* ── Form Polish ──────────────────────────────────────────── */
+.form-control:focus, .form-select:focus {
+    border-color: var(--cui-primary);
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
+}
+
+/* ── Component Polish ─────────────────────────────────────── */
+.card {
+    transition: var(--transition-standard);
+}
+
+.card.hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.badge {
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-weight: 700;
+}
+
+/* CoreUI adjustment for Orange theme */
+.btn-primary {
+    --cui-btn-bg: var(--cui-primary);
+    --cui-btn-border-color: var(--cui-primary);
+    --cui-btn-hover-bg: #ea580c;
+    --cui-btn-hover-border-color: #ea580c;
+}

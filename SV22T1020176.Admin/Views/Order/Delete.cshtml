@@ -1,0 +1,42 @@
+﻿@using SV22T1020176.Models.Sales
+@model SV22T1020176.Models.Sales.OrderViewInfo
+@{
+    Layout = null;
+}
+<div class="modal-header text-bg-danger">
+    <strong class="modal-title">
+        <i class="bi bi-trash me-2"></i>Xóa đơn hàng #@Model.OrderID
+    </strong>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+    <div class="alert alert-danger d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Bạn có chắc chắn muốn xóa đơn hàng này không? Hành động này không thể hoàn tác.
+    </div>
+
+    <dl class="row mb-0">
+        <dt class="col-sm-4 text-muted">Khách hàng</dt>
+        <dd class="col-sm-8">@Model.CustomerName</dd>
+
+        <dt class="col-sm-4 text-muted">Ngày đặt</dt>
+        <dd class="col-sm-8">@Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</dd>
+
+        <dt class="col-sm-4 text-muted">Tổng tiền</dt>
+        <dd class="col-sm-8 fw-bold text-danger">@Model.TotalAmount.ToString("N0") ₫</dd>
+
+        <dt class="col-sm-4 text-muted">Trạng thái</dt>
+        <dd class="col-sm-8">@Model.Status.GetDescription()</dd>
+    </dl>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+    <form method="post" action="~/Order/Delete/@Model.OrderID" style="display:inline;">
+        <input type="hidden" name="confirm" value="yes" />
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i> Xóa đơn hàng
+        </button>
+    </form>
+</div>

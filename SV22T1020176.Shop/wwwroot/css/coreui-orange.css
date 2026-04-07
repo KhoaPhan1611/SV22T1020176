@@ -1,0 +1,131 @@
+/* CoreUI Orange Premium Theme Tokens
+   =================================================== */
+
+:root {
+  --cui-primary: #f97316;
+  --cui-primary-rgb: 249, 115, 22;
+  --cui-primary-bg-subtle: #ffedd5;
+  --cui-primary-border-subtle: #fed7aa;
+  --cui-primary-text-emphasis: #9a3412;
+  
+  --cui-link-color: #f97316;
+  --cui-link-hover-color: #ea580c;
+  
+  --cui-sidebar-bg: #0f172a; /* Slate 900 for modern dark sidebar */
+  --cui-sidebar-nav-link-color: #94a3b8;
+  --cui-sidebar-nav-link-hover-color: #f8fafc;
+  --cui-sidebar-nav-link-hover-bg: rgba(249, 115, 22, 0.1);
+  --cui-sidebar-nav-link-active-bg: #f97316;
+  --cui-sidebar-nav-link-active-color: #ffffff;
+  
+  --cui-body-bg: #f8fafc;
+  --cui-font-sans-serif: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --cui-border-radius: 0.75rem;
+}
+
+body {
+  font-family: var(--cui-font-sans-serif);
+  background-color: var(--cui-body-bg);
+  color: #1e293b;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  --cui-sidebar-width: 280px;
+  background-color: var(--cui-sidebar-bg) !important;
+}
+
+.sidebar-nav .nav-link {
+    font-weight: 500;
+    border-radius: 0.5rem;
+    margin: 0.125rem 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.sidebar-nav .nav-link:hover {
+    color: var(--cui-primary);
+    background: rgba(249, 115, 22, 0.05);
+}
+
+.sidebar-nav .nav-link.active {
+    background-color: var(--cui-primary) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+/* Wrapper Layout */
+.wrapper {
+  width: 100%;
+  padding-left: 0; /* Default to full width */
+  transition: padding-left 0.15s ease-in-out;
+}
+
+/* Apply padding only when fixed sidebar is NOT hidden on desktop */
+@media (min-width: 992px) {
+  .sidebar.sidebar-fixed:not(.hide):not(.sidebar-hide):not(.sidebar-narrow) ~ .wrapper {
+    padding-left: 280px;
+  }
+  .sidebar.sidebar-fixed.sidebar-narrow-unfoldable ~ .wrapper,
+  .sidebar.sidebar-fixed.sidebar-narrow ~ .wrapper {
+    padding-left: 64px;
+  }
+}
+
+/* Header Styling */
+.header {
+  border-bottom: 1px solid #f1f5f9;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(8px);
+  z-index: 1030;
+}
+
+/* Button Overrides */
+.btn-primary {
+  --cui-btn-bg: #f97316;
+  --cui-btn-border-color: #f97316;
+  --cui-btn-hover-bg: #ea580c;
+  --cui-btn-hover-border-color: #ea580c;
+  --cui-btn-active-bg: #d94e06;
+  --cui-btn-active-border-color: #d94e06;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+.btn-outline-primary {
+  --cui-btn-color: #f97316;
+  --cui-btn-border-color: #f97316;
+  --cui-btn-hover-bg: #f97316;
+  --cui-btn-hover-border-color: #f97316;
+  --cui-btn-active-bg: #ea580c;
+  --cui-btn-active-border-color: #ea580c;
+  font-weight: 700;
+}
+
+/* Card Improvements */
+.card {
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  border-radius: 1rem;
+  transition: all 0.25s ease;
+}
+
+.card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+/* Badge and Color Utilities */
+.bg-primary-subtle {
+    background-color: #fff7ed !important;
+}
+
+.text-primary {
+    color: #f97316 !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

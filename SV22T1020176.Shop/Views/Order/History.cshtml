@@ -1,0 +1,213 @@
+@model PagedResult<OrderViewInfo>
+@{
+    ViewData["Title"] = "Lịch sử mua hàng";
+    int currentStatus = ViewBag.Status ?? 0;
+}
+
+<div class="animate-in">
+    <!-- Page Header -->
+    <div class="d-flex align-items-end justify-content-between mb-5 border-bottom pb-4">
+        <div>
+            <h1 class="fw-800 text-dark display-6 mb-1">Đơn hàng của tôi</h1>
+            <p class="text-muted fw-500 mb-0">Theo dõi trạng thái và quản lý các đơn hàng đã đặt</p>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-5">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-7">
+                <form action="~/Order/ExploreHistory" method="get" id="filterForm">
+                    <input type="hidden" name="status" id="statusInput" value="@currentStatus" />
+                    <input type="hidden" name="searchValue" value="@ViewBag.SearchValue" />
+                    <div class="nav nav-pills bg-light p-1 rounded-pill d-inline-flex flex-nowrap overflow-auto hide-scrollbar" style="max-width: 100%;">
+                        @{
+                            var statusList = new[] {
+                                (0, "Tất cả"),
+                                (1, "Chờ duyệt"),
+                                (3, "Đang giao"),
+                                (4, "Hoàn tất"),
+                                (-1, "Đã hủy")
+                            };
+
+                            foreach (var (status, label) in statusList)
+                            {
+                                bool isActive = currentStatus == status;
+                                <a href="javascript:void(0)" 
+                                   onclick="filterByStatus(@status)"
+                                   class="nav-link rounded-pill px-4 py-2 fw-700 fs-7 @(isActive ? "active shadow-sm" : "text-muted")">
+                                    @label
+                                </a>
+                            }
+                        }
+                    </div>
+                </form>
+            </div>
+            <div class="col-lg-5">
+                <form action="~/Order/ExploreHistory" method="get" class="w-100">
+                    <input type="hidden" name="status" value="@currentStatus" />
+                    <div class="input-group">
+                        <span class="input-group-text border-0 bg-light rounded-start-pill ps-3 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="search" name="searchValue" class="form-control border-0 bg-light py-2 shadow-none fs-7" 
+                               placeholder="Tìm mã đơn hàng hoặc tên sản phẩm..." 
+                               value="@ViewBag.SearchValue">
+                        <button type="submit" class="btn btn-primary rounded-end-pill px-4 fw-bold shadow-none">Tìm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order List -->
+    <div class="d-flex flex-column gap-4">
+        @if (Model.DataItems.Count == 0)
+        {
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-receipt display-1 text-muted opacity-25"></i>
+                </div>
+                <h3 class="fw-bold">Chưa có đơn hàng nào</h3>
+                <p class="text-muted">Không tìm thấy đơn hàng nào trong phân loại này.</p>
+                <a href="~/Product" class="btn btn-primary rounded-pill px-5 py-2 mt-4 fw-bold">
+                    <i class="bi bi-bag"></i> Mua sắm ngay
+                </a>
+            </div>
+        }
+
+        @foreach (var order in Model.DataItems)
+        {
+            var badgeColor = order.Status switch
+            {
+                SV22T1020176.Models.Sales.OrderStatusEnum.New      => "secondary",
+                SV22T1020176.Models.Sales.OrderStatusEnum.Accepted => "info",
+                SV22T1020176.Models.Sales.OrderStatusEnum.Shipping  => "primary",
+                SV22T1020176.Models.Sales.OrderStatusEnum.Completed  => "success",
+                SV22T1020176.Models.Sales.OrderStatusEnum.Cancelled => "danger",
+                SV22T1020176.Models.Sales.OrderStatusEnum.Rejected  => "warning",
+                _ => "dark"
+            };
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+                <div class="position-absolute top-0 start-0 h-100 bg-@badgeColor opacity-50" style="width: 4px;"></div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-4 mb-4 pb-4 border-bottom border-light">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                                <span class="badge bg-@badgeColor-subtle text-@badgeColor fw-800 rounded-pill px-3 py-2 uppercase tracking-wider fs-9">@order.StatusDescription</span>
+                                <span class="fs-7 fw-bold text-dark">Mã đơn #@order.OrderID</span>
+                                <span class="fs-8 text-muted fw-500"><i class="bi bi-calendar3 me-1"></i> @order.OrderTime.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                            
+                            <!-- Items Summary -->
+                            @{
+                                var details = (ViewBag.OrderDetails as Dictionary<int, List<OrderDetailViewInfo>>);
+                                if (details != null && details.ContainsKey(order.OrderID))
+                                {
+                                    var items = details[order.OrderID];
+                                    <div class="d-flex flex-column gap-3">
+                                        @foreach (var item in items)
+                                        {
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="rounded-3 overflow-hidden bg-light border border-opacity-10 p-1" style="width:64px; height:64px; flex-shrink:0;">
+                                                    <img src="@(string.IsNullOrEmpty(item.Photo) ? "https://placehold.co/100x100/fff7ed/f97316?text=NP" : (item.Photo.StartsWith("http") ? item.Photo : $"/images/products/{item.Photo}"))" 
+                                                         class="w-100 h-100 object-fit-cover rounded-2" />
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="fw-bold mb-1 text-dark fs-7">@item.ProductName</h6>
+                                                    <div class="fs-8 text-muted d-flex align-items-center gap-2">
+                                                        <span class="badge bg-light text-muted fw-normal">@item.Unit</span>
+                                                        <span>&times; <strong>@item.Quantity</strong></span>
+                                                        <span class="ms-auto fw-bold text-dark">@item.SalePrice.ToString("N0")<small>đ</small></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <div class="text-lg-end pt-2" style="min-width: 180px;">
+                            <span class="fs-9 text-muted fw-bold uppercase tracking-widest d-block mb-1">Tổng thanh toán</span>
+                            <h3 class="fw-900 text-primary mb-0">@order.TotalAmount.ToString("N0")<small class="ms-1 fs-6">đ</small></h3>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                        <div class="d-flex align-items-center gap-2 text-muted fs-8">
+                            <i class="bi bi-geo-alt text-primary"></i>
+                            <span class="text-truncate" style="max-width: 400px;">Giao đến: <strong class="text-dark fw-600">@order.DeliveryAddress</strong></span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="~/Order/DuplicateOrder/@order.OrderID" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold fs-8">
+                                <i class="bi bi-arrow-repeat me-1"></i> Mua lại
+                            </a>
+                            <a href="~/Order/TrackOrder/@order.OrderID" class="btn btn-primary rounded-pill px-4 py-2 fw-bold fs-8 shadow-sm">
+                                <i class="bi bi-eye me-1"></i> Chi tiết đơn hàng
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.PageCount > 1)
+    {
+        string BuildUrl(int p) => $"/Order/ExploreHistory?status={currentStatus}&page={p}&searchValue={ViewBag.SearchValue}";
+        
+        <nav class="mt-5">
+            <ul class="pagination pagination-sm justify-content-center gap-2">
+                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link rounded-circle d-flex align-items-center justify-content-center p-0" style="width:36px; height:36px;" href="@BuildUrl(Model.Page - 1)">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                @for (int p = 1; p <= Model.PageCount; p++)
+                {
+                    if (p == 1 || p == Model.PageCount || (p >= Model.Page - 2 && p <= Model.Page + 2))
+                    {
+                        <li class="page-item @(p == Model.Page ? "active" : "")">
+                            <a class="page-link rounded-circle d-flex align-items-center justify-content-center p-0" style="width:36px; height:36px;" href="@BuildUrl(p)">@p</a>
+                        </li>
+                    }
+                    else if (p == 2 || p == Model.PageCount - 1)
+                    {
+                        <li class="page-item disabled"><span class="page-link border-0 bg-transparent">&hellip;</span></li>
+                    }
+                }
+
+                <li class="page-item @(Model.Page >= Model.PageCount ? "disabled" : "")">
+                    <a class="page-link rounded-circle d-flex align-items-center justify-content-center p-0" style="width:36px; height:36px;" href="@BuildUrl(Model.Page + 1)">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function filterByStatus(status) {
+            document.getElementById('statusInput').value = status;
+            document.getElementById('filterForm').submit();
+        }
+    </script>
+}
+
+<style>
+    .fs-9 { font-size: 0.65rem; }
+    .uppercase { text-transform: uppercase; }
+    .tracking-widest { letter-spacing: 0.15em; }
+    .fw-800 { font-weight: 800; }
+    .fw-900 { font-weight: 900; }
+    .object-fit-cover { object-fit: cover; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .pagination .page-link { border: 0; background: #f8fafc; color: #64748b; font-weight: 700; transition: all 0.2s; }
+    .pagination .page-item.active .page-link { background: var(--cui-primary) !important; color: white !important; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3); }
+    .pagination .page-link:hover:not(.active) { background: #e2e8f0; color: var(--cui-primary); }
+</style>

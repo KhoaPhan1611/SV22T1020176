@@ -1,0 +1,369 @@
+﻿@using SV22T1020176.Admin
+@using SV22T1020176.Models.Constants
+@model SV22T1020176.Models.Sales.OrderViewInfo
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Chi tiết đơn hàng";
+    var details = ViewBag.Details as List<SV22T1020176.Models.Sales.OrderDetailViewInfo> ?? new List<SV22T1020176.Models.Sales.OrderDetailViewInfo>();
+    var statusColors = new Dictionary<int, string>
+    {
+        { -2, "alert-danger" },
+        { -1, "alert-secondary" },
+        { 1, "alert-warning" },
+        { 2, "alert-info" },
+        { 3, "alert-primary" },
+        { 4, "alert-success" }
+    };
+    var statusTexts = new Dictionary<int, (string icon, string text)>
+    {
+        { -2, ("bi-x-circle-fill", "Đơn hàng bị từ chối") },
+        { -1, ("bi-x-circle-fill", "Đơn hàng đã bị hủy") },
+        { 1, ("bi-clock-fill", "Đơn hàng mới - Đang chờ duyệt") },
+        { 2, ("bi-check-circle-fill", "Đơn hàng đã được duyệt") },
+        { 3, ("bi-truck", "Đơn hàng đang được vận chuyển") },
+        { 4, ("bi-bag-check-fill", "Đơn hàng đã hoàn tất") }
+    };
+    var badge = statusColors.GetValueOrDefault((int)Model.Status, "alert-secondary");
+    var (icon, text) = statusTexts.GetValueOrDefault((int)Model.Status, ("bi-question-circle", "Không xác định"));
+
+    var canAccept = Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.New;
+    var canShip = Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.Accepted;
+    var canFinish = Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.Shipping;
+    var canCancel = Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.New || Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.Accepted;
+    var canReject = Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.New;
+    var canDelete = Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.New
+                 || Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.Cancelled
+                 || Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.Rejected
+                 || Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.Completed;
+
+    var showAccept = canAccept && ApplicationContext.HasPermission(Permissions.OrderAccept);
+    var showShip = canShip && ApplicationContext.HasPermission(Permissions.OrderShip);
+    var showFinish = canFinish && ApplicationContext.HasPermission(Permissions.OrderComplete);
+    var showCancel = canCancel && ApplicationContext.HasPermission(Permissions.OrderCancel);
+    var showReject = canReject && ApplicationContext.HasPermission(Permissions.OrderReject);
+    var showProcessDropdown = showAccept || showShip || showFinish || showCancel || showReject;
+    var showDestructiveDivider = showCancel || showReject;
+    var showDeleteBtn = canDelete && ApplicationContext.HasPermission(Permissions.OrderDelete);
+    var canEditLines = Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.New
+                    || Model.Status == SV22T1020176.Models.Sales.OrderStatusEnum.Accepted;
+}
+
+@section PageToolBar {
+    @if (showProcessDropdown)
+    {
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-gear me-1"></i>
+                Xử lý đơn hàng
+            </button>
+            <ul class="dropdown-menu">
+                @if (showAccept)
+                {
+                    <li><a class="dropdown-item open-modal" href="~/Order/Accept/@Model.OrderID">Duyệt đơn hàng</a></li>
+                }
+                @if (showShip)
+                {
+                    <li><a class="dropdown-item open-modal" href="~/Order/Shipping/@Model.OrderID">Chuyển giao hàng</a></li>
+                }
+                @if (showFinish)
+                {
+                    <li><a class="dropdown-item open-modal" href="~/Order/Finish/@Model.OrderID">Hoàn tất đơn hàng</a></li>
+                }
+                @if (showDestructiveDivider)
+                {
+                    <li><hr class="dropdown-divider"></li>
+                }
+                @if (showCancel)
+                {
+                    <li><a class="dropdown-item text-danger open-modal" href="~/Order/Cancel/@Model.OrderID">Hủy đơn hàng</a></li>
+                }
+                @if (showReject)
+                {
+                    <li><a class="dropdown-item text-danger open-modal" href="~/Order/Reject/@Model.OrderID">Từ chối đơn hàng</a></li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (showDeleteBtn)
+    {
+        <a href="~/Order/Delete/@Model.OrderID" class="btn btn-danger open-modal@(showProcessDropdown ? " ms-1" : "")">
+            <i class="bi bi-trash"></i>
+            Xóa
+        </a>
+    }
+
+    <a href="~/Order" class="btn btn-secondary@(showProcessDropdown || showDeleteBtn ? " ms-1" : "")">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- TRẠNG THÁI ĐƠN HÀNG — cấu trúc giống ui/Views/Order/Detail.cshtml -->
+<div class="alert @badge d-flex align-items-center mb-3">
+    <i class="bi @icon fs-4 me-2"></i>
+    <div>
+        <strong>Trạng thái đơn hàng:</strong>
+        @text
+        @if (Model.FinishedTime.HasValue)
+        {
+            <span> lúc <b>@Model.FinishedTime.Value.ToString("dd/MM/yyyy HH:mm")</b></span>
+        }
+    </div>
+</div>
+
+<!-- THÔNG TIN ĐƠN HÀNG -->
+<div class="card card-primary card-outline mb-3">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-receipt me-2"></i>
+            Thông tin đơn hàng
+        </h5>
+    </div>
+    <div class="card-body ps-4 pe-4">
+        <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Mã đơn hàng</div>
+            <div class="col-md-3">#@Model.OrderID</div>
+            <div class="col-md-3 fw-bold">Ngày lập</div>
+            <div class="col-md-3">@Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 fw-bold">Nhân viên phụ trách</div>
+            <div class="col-md-3">@(string.IsNullOrEmpty(Model.EmployeeName) ? "—" : Model.EmployeeName)</div>
+            <div class="col-md-3 fw-bold">Ngày nhận đơn</div>
+            <div class="col-md-3">@(Model.AcceptTime.HasValue ? Model.AcceptTime.Value.ToString("dd/MM/yyyy HH:mm") : "—")</div>
+        </div>
+    </div>
+</div>
+
+<!-- THÔNG TIN KHÁCH HÀNG -->
+<div class="card card-info card-outline mb-3">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-person me-2"></i>
+            Thông tin khách hàng
+        </h5>
+    </div>
+    <div class="card-body ps-4 pe-4">
+        <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Khách hàng</div>
+            <div class="col-md-3">@Model.CustomerName</div>
+            <div class="col-md-3 fw-bold">Tên giao dịch</div>
+            <div class="col-md-3">@Model.CustomerContactName</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Email</div>
+            <div class="col-md-9">@Model.CustomerEmail</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Điện thoại</div>
+            <div class="col-md-9">@(string.IsNullOrEmpty(Model.CustomerPhone) ? "—" : Model.CustomerPhone)</div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 fw-bold">Địa chỉ</div>
+            <div class="col-md-9">@Model.CustomerAddress</div>
+        </div>
+    </div>
+</div>
+
+<!-- THÔNG TIN GIAO HÀNG -->
+<div class="card card-success card-outline mb-3">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-truck me-2"></i>
+            Thông tin giao hàng
+        </h5>
+    </div>
+    <div class="card-body ps-4 pe-4">
+        <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Người giao hàng</div>
+            <div class="col-md-3">@(string.IsNullOrEmpty(Model.ShipperName) ? "—" : Model.ShipperName)</div>
+            <div class="col-md-3 fw-bold">Điện thoại</div>
+            <div class="col-md-3">@(string.IsNullOrEmpty(Model.ShipperPhone) ? "—" : Model.ShipperPhone)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Địa chỉ giao hàng</div>
+            <div class="col-md-9">@Model.DeliveryAddress</div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 fw-bold">Tỉnh / Thành</div>
+            <div class="col-md-9">@Model.DeliveryProvince</div>
+        </div>
+    </div>
+</div>
+
+<!-- DANH SÁCH MẶT HÀNG -->
+<div class="card card-secondary card-outline">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-box-seam me-2"></i>
+            Danh sách mặt hàng
+        </h5>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-secondary text-center">
+                <tr>
+                    <th>STT</th>
+                    <th>Tên hàng</th>
+                    <th>ĐVT</th>
+                    <th>Số lượng</th>
+                    <th>Giá</th>
+                    <th>Thành tiền</th>
+                    @if (canEditLines)
+                    {
+                        <th style="width:90px"></th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int stt = 1;
+                    decimal total = 0;
+                }
+                @foreach (var item in details)
+                {
+                    var itemTotal = item.Quantity * item.SalePrice;
+                    total += itemTotal;
+                    <tr>
+                        <td class="text-center">@(stt++)</td>
+                        <td>@item.ProductName</td>
+                        <td class="text-center">@item.Unit</td>
+                        <td class="text-center">@item.Quantity</td>
+                        <td class="text-end">@item.SalePrice.ToString("#,##0") đ</td>
+                        <td class="text-end">@itemTotal.ToString("#,##0") đ</td>
+                        @if (canEditLines)
+                        {
+                            <td class="text-end text-nowrap">
+                                <a href="~/Order/EditCartItem/@Model.OrderID?productId=@item.ProductID" class="btn btn-sm btn-primary open-modal" title="Sửa">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="~/Order/DeleteCartItem/@Model.OrderID?productId=@item.ProductID" class="btn btn-sm btn-danger open-modal" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="5" class="text-end">Tổng cộng</th>
+                    <th class="text-end">@total.ToString("#,##0") đ</th>
+                    @if (canEditLines)
+                    {
+                        <th></th>
+                    }
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@* Modal AJAX (open-modal) — giống source: Accept / Shipping / Finish / … / EditCartItem / DeleteCartItem *@
+<div class="modal fade" id="dialogModal" tabindex="-1" aria-labelledby="dialogModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" id="dialogModalContent"></div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .card-body .row {
+            border-bottom: 1px dotted #646464;
+        }
+
+        .card-body .row:last-child {
+            border-bottom: none;
+        }
+        #dialogModal.modal:not(.show) {
+            pointer-events: none !important;
+            visibility: hidden !important;
+        }
+        #dialogModal.modal.show {
+            visibility: visible !important;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        function orderDetailModalCleanup() {
+            var m = document.getElementById('dialogModal');
+            if (m) {
+                var inst = bootstrap.Modal.getInstance(m);
+                if (inst) {
+                    try { inst.dispose(); } catch (e) { /* ignore */ }
+                }
+                m.classList.remove('show');
+                m.setAttribute('aria-hidden', 'true');
+                m.removeAttribute('aria-modal');
+                m.removeAttribute('role');
+                m.style.display = 'none';
+            }
+            document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
+
+        function orderDetailCloseDropdownIfAny(anchor) {
+            var dd = anchor.closest('.dropdown');
+            if (!dd) return;
+            var toggle = dd.querySelector('[data-bs-toggle="dropdown"]');
+            var ddi = toggle && bootstrap.Dropdown.getInstance(toggle);
+            if (ddi) ddi.hide();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('dialogModal');
+            if (modalEl && modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            if (modalEl) {
+                modalEl.addEventListener('hidden.bs.modal', function () {
+                    orderDetailModalCleanup();
+                });
+            }
+            orderDetailModalCleanup();
+
+            document.body.addEventListener('click', function (e) {
+                var a = e.target.closest('a.open-modal');
+                if (!a || !a.getAttribute('href')) return;
+                e.preventDefault();
+                orderDetailCloseDropdownIfAny(a);
+                var url = a.href;
+                var content = document.getElementById('dialogModalContent');
+                var modalEl2 = document.getElementById('dialogModal');
+                if (!content || !modalEl2) return;
+                orderDetailModalCleanup();
+                content.innerHTML = '<div class="modal-body text-center py-5 text-muted">Đang tải...</div>';
+                var inst = new bootstrap.Modal(modalEl2, { backdrop: true, keyboard: true, focus: true });
+                inst.show();
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.text(); })
+                    .then(function (html) {
+                        content.innerHTML = html;
+                    })
+                    .catch(function () {
+                        content.innerHTML = '<div class="modal-body"><div class="alert alert-danger mb-0">Không tải được nội dung.</div></div>';
+                    });
+            });
+        });
+    </script>
+}

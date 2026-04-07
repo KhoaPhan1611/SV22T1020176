@@ -1,0 +1,74 @@
+﻿@{
+    ViewBag.Title = "Đăng nhập";
+    Layout = null;
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>SV22T1020176.Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <link rel="stylesheet" href="~/lib/overlay-scrollbars/overlayscrollbars.min.css">
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/adminlte/css/adminlte.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+
+<body class="login-page bg-body-secondary">
+    <div class="login-box">
+        <div class="login-logo">
+            <a><b>TNP</b> Shop</a>
+        </div>
+        <!-- /.login-logo -->
+        <div class="card">
+            <div class="card-body login-card-body">
+                <p class="login-box-msg">Đăng nhập</p>
+
+                <form asp-action="Login" method="post">
+                    @if (ViewData.ModelState.ErrorCount > 0)
+                    {
+                        <div class="alert alert-danger alert-dismissible">
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            <div asp-validation-summary="All" class="text-danger"></div>
+                        </div>
+                    }
+
+                    <div class="input-group mb-3">
+                        <input type="email" class="form-control" placeholder="Email" name="email" value="@ViewData["email"]"
+                               autofocus required
+                               oninvalid="this.setCustomValidity('Vui lòng nhập địa chỉ email')"
+                               oninput="this.setCustomValidity('')" />
+                        <div class="input-group-text"><span class="bi bi-envelope"></span></div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="password" class="form-control" placeholder="Password" name="password"
+                               required
+                               oninvalid="this.setCustomValidity('Vui lòng nhập mật khẩu')"
+                               oninput="this.setCustomValidity('')" />
+                        <div class="input-group-text"><span class="bi bi-lock-fill"></span></div>
+                    </div>
+                    <!--begin::Row-->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Đăng nhập</button>
+                            </div>
+                        </div>
+                        <!-- /.col -->
+                    </div>
+                    <!--end::Row-->
+                </form>
+            </div>
+            <!-- /.login-card-body -->
+        </div>
+    </div>
+    <!-- /.login-box -->
+
+    <script src="~/lib/overlay-scrollbars/overlayscrollbars.browser.es6.min.js"></script>
+    <script src="~/lib/popperjs/popper.min.js"></script>
+    <script src="~/lib/bootstrap/bootstrap.bundle.min.js"></script>
+    <script type="module" src="~/lib/adminlte/js/adminlte.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,247 @@
+@using SV22T1020176.Models.Catalog
+@using SV22T1020176.Models.Common
+@{
+    var categories = ViewBag.Categories as PagedResult<Category>;
+    var productResult = ViewBag.ProductResult as PagedResult<Product>;
+    int currentCategoryID = ViewBag.CurrentCategoryID ?? 0;
+    string currentSearchValue = ViewBag.CurrentSearchValue ?? "";
+    int totalProducts = productResult?.RowCount ?? 0;
+}
+
+<!-- Hero Section (Carousel) -->
+<div id="heroCarousel" class="carousel slide carousel-fade mb-5 shadow-sm rounded-4 overflow-hidden" data-coreui-ride="carousel">
+    <div class="carousel-indicators">
+        <button type="button" data-coreui-target="#heroCarousel" data-coreui-slide-to="0" class="active" aria-current="true"></button>
+        <button type="button" data-coreui-target="#heroCarousel" data-coreui-slide-to="1"></button>
+        <button type="button" data-coreui-target="#heroCarousel" data-coreui-slide-to="2"></button>
+    </div>
+    <div class="carousel-inner">
+        <!-- Slide 1 -->
+        <div class="carousel-item active" style="min-height: 400px; background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);">
+            <div class="container h-100 py-5">
+                <div class="row align-items-center h-100">
+                    <div class="col-lg-6 text-white animate-in">
+                        <span class="badge bg-white text-primary mb-3 px-3 py-2 rounded-pill fw-bold">Khai xuân rực rỡ</span>
+                        <h1 class="display-3 fw-900 mb-4 lh-1">Mua sắm thông minh,<br><span class="text-white-50">sống hiện đại</span></h1>
+                        <p class="lead mb-5 opacity-90">Khám phá hàng ngàn sản phẩm chất lượng với giá tốt nhất. Đặt hàng dễ dàng, giao hàng nhanh chóng.</p>
+                        <div class="d-flex gap-3">
+                            <a href="#searchResult" class="btn btn-white btn-lg rounded-pill px-4 fw-bold">Khám phá ngay</a>
+                            <div class="d-flex align-items-center gap-2 text-white fs-7">
+                                <i class="bi bi-truck"></i> Miễn phí vận chuyển > 500K
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Slide 2 -->
+        <div class="carousel-item" style="min-height: 400px; background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); text-align: left;">
+            <div class="container h-100 py-5">
+                <div class="row align-items-center h-100">
+                    <div class="col-lg-6 text-white animate-in">
+                        <span class="badge bg-danger mb-3 px-3 py-2 rounded-pill fw-bold">Flash Sale</span>
+                        <h1 class="display-3 fw-900 mb-4 lh-1">Siêu ưu đãi hàng tuần,<br><span class="text-white-50">lên đến 50%</span></h1>
+                        <p class="lead mb-5 opacity-90">Đừng bỏ lỡ cơ hội sở hữu những món đồ yêu thích với mức giá không thể rẻ hơn. Deal sốc mỗi ngày.</p>
+                        <button type="button" class="btn btn-light btn-lg rounded-pill px-4 fw-bold text-primary">Săn deal ngay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Slide 3 -->
+        <div class="carousel-item" style="min-height: 400px; background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);">
+            <div class="container h-100 py-5">
+                <div class="row align-items-center h-100">
+                    <div class="col-lg-6 text-white animate-in">
+                        <span class="badge bg-primary mb-3 px-3 py-2 rounded-pill fw-bold">Bộ sưu tập mới</span>
+                        <h1 class="display-3 fw-900 mb-4 lh-1">Phong cách trẻ trung,<br><span class="text-white-50">xu hướng 2024</span></h1>
+                        <p class="lead mb-5 opacity-90">Cập nhật những xu hướng mới nhất từ thế giới công nghệ và phong cách. Nâng tầm cuộc sống của bạn.</p>
+                        <button type="button" class="btn btn-outline-light btn-lg rounded-pill px-4 fw-bold border-2">Xem bộ sưu tập</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-coreui-target="#heroCarousel" data-coreui-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-coreui-target="#heroCarousel" data-coreui-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    </button>
+</div>
+
+<!-- Main Content -->
+<div class="row g-4">
+    <!-- Sidebar Filter -->
+    <div class="col-lg-3">
+        @await Html.PartialAsync("_FilterCard")
+    </div>
+
+    <!-- Product List -->
+    <div class="col-lg-9">
+        <!-- Search Status -->
+        <div class="card border-0 bg-white shadow-sm rounded-4 mb-4" id="dynamicSearchStatus">
+            <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fw-bold fs-7 text-dark" id="searchStatusText">Tất cả sản phẩm</span>
+                    <span class="badge bg-primary-subtle text-primary fw-bold" id="productCountDisplayStatus">@totalProducts.ToString("N0")</span>
+                </div>
+                <div class="fs-8 text-muted fw-600 uppercase tracking-wider">
+                    Hiển thị <span class="text-dark">@(productResult?.DataItems?.Count() ?? 0)</span> sản phẩm mỗi trang
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="searchResult">
+            @await Html.PartialAsync("_ProductGrid", productResult ?? new PagedResult<Product>())
+        </div>
+    </div>
+</div>
+
+<!-- Trust Banner -->
+<section class="mt-5 py-5 border-top">
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-4">
+            <div class="text-center p-4 h-100 rounded-4 transition-all hover-bg-light">
+                <div class="bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                    <i class="bi bi-truck fs-3"></i>
+                </div>
+                <h6 class="fw-bold fs-6 mb-2">Miễn phí vận chuyển</h6>
+                <p class="text-muted small mb-0 px-4">Cho mọi đơn hàng có giá trị từ 500.000đ trên toàn quốc.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center p-4 h-100 rounded-4 transition-all hover-bg-light">
+                <div class="bg-success-subtle text-success d-inline-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                    <i class="bi bi-shield-check fs-3"></i>
+                </div>
+                <h6 class="fw-bold fs-6 mb-2">Giao dịch an toàn</h6>
+                <p class="text-muted small mb-0 px-4">Hỗ trợ thanh toán khi nhận hàng (COD) và bảo mật tuyệt đối.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center p-4 h-100 rounded-4 transition-all hover-bg-light">
+                <div class="bg-info-subtle text-info d-inline-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                    <i class="bi bi-headset fs-3"></i>
+                </div>
+                <h6 class="fw-bold fs-6 mb-2">Hỗ trợ tận tâm</h6>
+                <p class="text-muted small mb-0 px-4">Đội ngũ CSKH chuyên nghiệp luôn sẵn sàng hỗ trợ bạn 24/7.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function syncProductCountFromResult() {
+            var $meta = $("#searchResult .js-paged-meta");
+            if (!$meta.length) return;
+            var n = parseInt($meta.attr("data-row-count"), 10);
+            if (isNaN(n)) n = 0;
+            $("#productCountDisplayStatus").text(n.toLocaleString("vi-VN"));
+            
+            var catName = $("#searchCategoryID option:selected").text().trim();
+            var catVal = $("#searchCategoryID").val();
+            var searchVal = $("#searchValueState").val() || "";
+
+            var combined = "";
+            var searchPart = searchVal ? `"${searchVal}"` : "";
+            var categoryPart = (catVal && catVal !== "0") ? `"${catName}"` : "";
+
+            if (searchPart && categoryPart) combined = `${searchPart} trong ${categoryPart}`;
+            else if (searchPart) combined = `từ khóa ${searchPart}`;
+            else if (categoryPart) combined = `danh mục ${categoryPart}`;
+
+            var finalMsg = combined ? `Kết quả cho ${combined}` : "Tất cả sản phẩm";
+            $("#searchStatusText").text(finalMsg);
+            
+            $meta.remove();
+        }
+
+        function applyPricePreset() {
+            var val = $("#pricePreset").val();
+            if (!val) {
+                $("#minPriceInput").val("");
+                $("#maxPriceInput").val("");
+                return;
+            }
+            var parts = val.split(",");
+            var min = parts[0] || "";
+            var max = parts[1] || "";
+            $("#minPriceInput").val(min);
+            $("#maxPriceInput").val(max);
+        }
+
+        function doSearch(page) {
+            $("#formSearch input[name='Page']").val(page);
+            var params = {
+                CategoryID: $("#searchCategoryID").val(),
+                MinPrice: $("#minPriceInput").val(),
+                MaxPrice: $("#maxPriceInput").val(),
+                Page: page,
+                SearchValue: $("#searchValueState").val() || ""
+            };
+
+            $.ajax({
+                url: "/Home/FilterProducts",
+                type: "GET",
+                data: params,
+                success: function (data) {
+                    $("#searchResult").fadeOut(100, function(){
+                        $(this).html(data).fadeIn(200);
+                        syncProductCountFromResult();
+                    });
+                },
+                error: function () {
+                    $("#searchResult").html('<div class="text-center py-5"><i class="bi bi-exclamation-triangle display-1 text-danger opacity-25"></i><h4 class="mt-3">Có lỗi xảy ra</h4><p class="text-muted">Vui lòng tải lại trang và thử lại.</p></div>');
+                }
+            });
+        }
+
+        function resetFilter() {
+            $("#searchCategoryID").val("0");
+            $("#pricePreset").val("");
+            $("#minPriceInput").val("");
+            $("#maxPriceInput").val("");
+            $("#searchValueState").val("");
+            doSearch(1);
+        }
+
+        $(document).ready(function () {
+            selectPricePresetFromInputs();
+            syncProductCountFromResult();
+
+            $("#minPriceInput, #maxPriceInput").on("input", function () {
+                $("#pricePreset").val("");
+            });
+        });
+
+        function selectPricePresetFromInputs() {
+            var min = parseInt($("#minPriceInput").val()) || 0;
+            var max = parseInt($("#maxPriceInput").val()) || 0;
+            if (min === 0 && max === 0) return;
+            $("#pricePreset option").each(function () {
+                var val = $(this).val();
+                if (!val) return;
+                var parts = val.split(",");
+                var pMin = parseInt(parts[0]) || 0;
+                var pMax = parseInt(parts[1]) || 0;
+                if (pMin === min && pMax === max) {
+                    $("#pricePreset").val(val);
+                }
+            });
+        }
+    </script>
+}
+
+<style>
+    .btn-white { background-color: #fff; color: #f97316; border: none; }
+    .btn-white:hover { background-color: #f8fafc; color: #ea580c; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .display-3 { font-size: 3.5rem; letter-spacing: -2px; }
+    .fw-900 { font-weight: 900; }
+    .text-white-50 { color: rgba(255,255,255,0.6) !important; }
+    .hover-bg-light:hover { background: #f8fafc; }
+    .fs-9 { font-size: 0.7rem; }
+    .tracking-wider { letter-spacing: 0.1em; }
+    .carousel-item { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+</style>

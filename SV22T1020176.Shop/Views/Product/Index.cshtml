@@ -1,0 +1,165 @@
+@model SV22T1020176.Models.Catalog.ProductSearchInput
+@{
+    ViewData["Title"] = "Thế giới mua sắm";
+}
+
+<div class="pt-4 animate-in">
+    <!-- Page Header -->
+    <!-- Page Header & Search Status Row -->
+    <div class="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-4">
+        <!-- Header Left -->
+        <div class="page-header" style="margin-bottom: 0;">
+            <div>
+                <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 2px;">Khám phá sản phẩm</h1>
+                <p class="text-muted-md mb-0" style="font-size: 0.875rem;">Tìm kiếm hàng ngàn sản phẩm chất lượng</p>
+            </div>
+        </div>
+
+        <!-- Header Right (Dynamic Search Status) -->
+        <div class="md-search-status border-0 pb-0 mb-0" id="dynamicSearchStatus" style="flex-grow:1; display:flex; justify-content:flex-end;">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                <div class="md-search-info">
+                    <span class="text-muted-md" id="searchStatusText">Kết quả tìm kiếm</span>
+                    <span class="mx-2 text-muted-md opacity-25">|</span>
+                    <span class="md-search-count">Tìm thấy <strong id="productCountDisplayStatus">...</strong> sản phẩm</span>
+                </div>
+                <div class="md-search-sort" style="margin-left: 8px;">
+                    <span class="text-muted-md">Hiển thị <strong>@Model.PageSize</strong> / trang</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar Filter (Desktop) -->
+        <div class="col-lg-3">
+            @await Html.PartialAsync("_FilterCard")
+        </div>
+
+        <!-- Main Results Area -->
+        <div class="col-lg-9">
+            <!-- Render Results Container -->
+            <div id="searchResult">
+                <!-- Skeleton loading -->
+                <div class="row g-4">
+                    @for (int i = 0; i < 8; i++)
+                    {
+                        <div class="col-6 col-md-4 col-xl-3">
+                            <div style="background: var(--md-surface-container-low); border-radius: var(--md-radius-md); height: 320px; animation: pulse 1.5s infinite;"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function syncProductCountFromResult() {
+            var $meta = $("#searchResult .js-paged-meta");
+            if (!$meta.length) return;
+            var n = parseInt($meta.attr("data-row-count"), 10);
+            if (isNaN(n)) n = 0;
+            $("#productCountDisplayStatus").text(n.toLocaleString("vi-VN"));
+
+            var catName = $("#searchCategoryID option:selected").text().trim();
+            var catVal = $("#searchCategoryID").val();
+            var searchVal = $("#searchValueState").val() || "";
+
+            var combined = "";
+            var searchPart = searchVal ? `từ khóa "${searchVal}"` : "";
+            var categoryPart = (catVal && catVal !== "0") ? `trong danh mục "${catName}"` : "";
+
+            if (searchPart && categoryPart) combined = `${searchPart} ${categoryPart}`;
+            else if (searchPart) combined = searchPart;
+            else if (categoryPart) combined = categoryPart;
+
+            var finalMsg = combined ? `Kết quả ${combined}` : "Tất cả sản phẩm";
+            $("#searchStatusText").text(finalMsg);
+
+            $meta.remove();
+        }
+
+        function applyPricePreset() {
+            var val = $("#pricePreset").val();
+            if (!val) {
+                $("#minPriceInput").val("");
+                $("#maxPriceInput").val("");
+                return;
+            }
+            var parts = val.split(",");
+            var min = parts[0] || "";
+            var max = parts[1] || "";
+            $("#minPriceInput").val(min);
+            $("#maxPriceInput").val(max);
+        }
+
+        function doSearch(page) {
+            applyPricePreset();
+            $("#formSearch input[name='Page']").val(page);
+            var params = {
+                CategoryID: $("#searchCategoryID").val(),
+                MinPrice: $("#minPriceInput").val(),
+                MaxPrice: $("#maxPriceInput").val(),
+                Page: page,
+                SearchValue: $("#searchValueState").val() || ""
+            };
+
+            $.ajax({
+                url: "/Product/GetProductList",
+                type: "GET",
+                data: params,
+                success: function (data) {
+                    $("#searchResult").html(data);
+                    syncProductCountFromResult();
+                },
+                error: function () {
+                    $("#searchResult").html('<div class="md-empty-state"><div class="md-empty-icon"><i class="bi bi-exclamation-triangle"></i></div><h3>Có lỗi xảy ra</h3><p class="text-muted-md">Vui lòng thử lại.</p></div>');
+                }
+            });
+        }
+
+        function resetFilter() {
+            $("select[name='CategoryID']").val("0");
+            $("#pricePreset").val("");
+            $("#minPriceInput").val("");
+            $("#maxPriceInput").val("");
+            $("#searchValueState").val("");
+            doSearch(1);
+        }
+
+        $(document).ready(function () {
+            $("#searchCategoryID").val("@Model.CategoryID");
+            selectPricePresetFromInputs();
+            doSearch(@Model.Page);
+
+            $("#minPriceInput, #maxPriceInput").on("input", function () {
+                $("#pricePreset").val("");
+            });
+        });
+
+        function selectPricePresetFromInputs() {
+            var min = parseInt($("#minPriceInput").val()) || 0;
+            var max = parseInt($("#maxPriceInput").val()) || 0;
+            if (min === 0 && max === 0) return;
+            $("#pricePreset option").each(function () {
+                var val = $(this).val();
+                if (!val) return;
+                var parts = val.split(",");
+                var pMin = parseInt(parts[0]) || 0;
+                var pMax = parseInt(parts[1]) || 0;
+                if (pMin === min && pMax === max) {
+                    $("#pricePreset").val(val);
+                }
+            });
+        }
+    </script>
+}

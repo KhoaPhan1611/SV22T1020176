@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>LiteCommerce</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <link rel="stylesheet" href="~/lib/flatpickr/flatpickr.min.css">    
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />    
+    <link rel="stylesheet" href="~/lib/adminlte/css/adminlte.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="sidebar-expand-lg sidebar-open bg-body-tertiary">
+    <div class="app-wrapper">
+        @await Html.PartialAsync("_Header")
+        @await Html.PartialAsync("_Sidebar")        
+        <main class="app-main">
+            <div class="app-content-header">
+                <div class="container-fluid">
+                    <div class="row align-items-center">
+                        @if (!string.IsNullOrWhiteSpace(ViewBag.Title as string))
+                        {
+                            <div class="col-sm-4">
+                                <h5 class="mb-0">@ViewBag.Title</h5>
+                            </div>
+                        }
+                        <div class="@(string.IsNullOrWhiteSpace(ViewBag.Title as string) ? "col-12" : "col-sm-8")">
+                            <div class="d-flex flex-wrap justify-content-end align-items-center gap-1">
+                                @await RenderSectionAsync("PageToolBar", required: false)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="app-content">
+                <div class="container-fluid">
+                    @RenderBody()
+                </div>
+            </div>
+        </main>
+        @await Html.PartialAsync("_Footer")        
+    </div>
+    <button id="scrollToTop" onclick="window.scrollTo(0,0)">
+        <i class="bi bi-arrow-up-circle"></i>
+    </button>
+
+    <script src="~/lib/flatpickr/flatpickr.min.js"></script>
+    <script src="~/lib/flatpickr/l10n/vn.js"></script>    
+    <script src="~/lib/autonumeric/autonumeric.js"></script>    
+    <script src="~/lib/bootstrap/bootstrap.bundle.min.js"></script>
+    <script type="module" src="~/lib/adminlte/js/adminlte.js"></script>
+    <script src="~/js/site.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {            
+            if (typeof flatpickr !== 'undefined') {
+                flatpickr(".date-picker", {
+                    dateFormat: "d/m/Y",
+                    locale: "vn",
+                    allowInput: false
+                });
+                flatpickr(".date-picker-birth", {
+                    dateFormat: "d/m/Y",
+                    locale: "vn",
+                    allowInput: false,
+                    maxDate: new Date()
+                });
+            }
+            if (typeof AutoNumeric !== 'undefined') {
+                document.querySelectorAll(".money-input").forEach(element => {
+                    new AutoNumeric(element, {
+                        digitGroupSeparator: '.',
+                        decimalCharacter: ',',
+                        decimalPlaces: 0,
+                        unformatOnSubmit: true
+                    });
+                });
+            }
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

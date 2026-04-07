@@ -1,0 +1,81 @@
+## [Visual Studio]
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (DotSettings)
+*.ReSharper.user
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+# Uncomment if you use the Visual Studio 2017+ (.vs) folder
+# .vs/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# Build results of 64-bit compilation
+bin/
+obj/
+
+# Config file chứa credentials — đừng bao giờ commit
+appsettings.json
+SV22T1020073.Shop/appsettings.json
+SV22T1020073.Admin/appsettings.json
+
+# CoreCLR traces
+*.4.trace
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# User local settings
+appsettings.Local.json
+*.pfx
+*.publishsettings
+
+# Cursor AI
+# .cursor/
+
+# Others
+.DS_Store
+Thumbs.db
+
+# File tạm / log build cục bộ (không commit)
+build_errors*.txt
+build.txt
+read_errors.py

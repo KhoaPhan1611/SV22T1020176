@@ -1,0 +1,97 @@
+﻿@model SV22T1020176.Models.Partner.Shipper
+@{
+    ViewBag.Title = "Bổ sung người giao hàng";
+}
+@section PageToolBar {
+    <button type="submit" form="formCreate" class="btn btn-primary">
+        <i class="bi bi-save"></i>
+        Lưu dữ liệu
+    </button>
+    <a href="~/Shipper" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
+}
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bicycle me-2"></i>
+                    Thông tin người giao hàng
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <form id="formCreate" asp-action="Create" method="post">
+
+                    <div class="mb-3">
+                        <label class="form-label">Tên người giao hàng <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control"
+                               name="ShipperName"
+                               value="@Model.ShipperName"
+                               placeholder="Nhập tên người giao hàng"
+                               required
+                               maxlength="255"
+                               autofocus
+                               oninvalid="this.setCustomValidity('Vui lòng nhập tên người giao hàng')"
+                               oninput="this.setCustomValidity('')" />
+                        @Html.ValidationMessage("ShipperName", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Điện thoại <span class="text-danger">*</span></label>
+                        <input type="tel"
+                               class="form-control"
+                               name="Phone"
+                               value="@Model.Phone"
+                               placeholder="Ví dụ: 0901234567 hoặc 028.3822.1111"
+                               required
+                               maxlength="20"
+                               oninvalid="this.setCustomValidity('Vui lòng nhập số điện thoại')"
+                               oninput="this.setCustomValidity('')" />
+                        @Html.ValidationMessage("Phone", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="text-danger">
+                        @Html.ValidationSummary(true)
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('formCreate');
+            if (!form) return;
+            form.addEventListener('submit', function () {
+                const phone = form.querySelector('input[name="Phone"]');
+                if (!phone || !phone.value.trim()) return;
+                const v = phone.value.trim();
+                if (!/^[0-9 .+\-()]+$/.test(v)) {
+                    phone.setCustomValidity('Số điện thoại chỉ được chứa chữ số và khoảng trắng, dấu chấm, gạch ngang, ngoặc');
+                    return;
+                }
+                const digits = (v.match(/\d/g) || []).length;
+                if (digits < 8 || digits > 15) {
+                    phone.setCustomValidity('Số điện thoại cần từ 8 đến 15 chữ số');
+                } else {
+                    phone.setCustomValidity('');
+                }
+            });
+            $('input, textarea, select').on('input change', function () {
+                const fieldName = $(this).attr('name');
+                if (fieldName) {
+                    $(`span[data-valmsg-for="${fieldName}"]`).text('');
+                    $(this).siblings('.text-danger').text('');
+                }
+                if ($(this).attr('name') === 'Phone') this.setCustomValidity('');
+            });
+        })();
+    </script>
+}

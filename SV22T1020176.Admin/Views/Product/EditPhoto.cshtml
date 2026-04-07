@@ -1,0 +1,118 @@
+﻿@model SV22T1020176.Models.Catalog.ProductPhoto
+@{
+    ViewBag.Title = "Sửa ảnh mặt hàng";
+}
+@section PageToolBar {
+    <button type="submit" form="formEditPhoto" class="btn btn-primary">
+        <i class="bi bi-save"></i>
+        Lưu ảnh
+    </button>
+
+    <a href="~/Product/Edit/@Model.ProductID#photos" class="btn btn-secondary ms-1">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
+}
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-outline card-info">
+            <div class="card-header">
+                <h5 class="mb-0">Thông tin ảnh mặt hàng</h5>
+            </div>
+
+            <div class="card-body">
+                <form id="formEditPhoto"
+                      asp-action="EditPhoto"
+                      method="post"
+                      enctype="multipart/form-data">
+
+                    <input type="hidden" name="PhotoID" value="@Model.PhotoID" />
+                    <input type="hidden" name="ProductID" value="@Model.ProductID" />
+                    <input type="hidden" name="Photo" value="@Model.Photo" />
+
+                    <p class="text-muted small mb-4 mb-sm-3">
+                        Sửa ảnh cho:
+                        <a href="~/Product/Edit/@Model.ProductID" class="fw-semibold">@(ViewBag.ProductName ?? "Sản phẩm")</a>
+                    </p>
+
+                    <div class="text-danger mb-3">
+                        @Html.ValidationSummary(false)
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-3 fw-semibold">Ảnh</label>
+                        <div class="col-sm-9">
+                            <input type="file"
+                                   class="form-control"
+                                   name="photoFile"
+                                   accept="image/*"
+                                   data-img-preview="imgPreviewEdit"
+                                   onchange="previewImage(this)" />
+                            <div class="form-text">Để trống nếu không muốn thay đổi ảnh. Hỗ trợ: JPG, PNG, GIF, WEBP.</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 fw-semibold">Xem trước</label>
+                        <div class="col-sm-9">
+                            <img id="imgPreviewEdit"
+                                 src="@(string.IsNullOrEmpty(Model.Photo) ? Url.Content("~/images/products/nophoto.png") : Url.Content("~/images/products/" + Model.Photo))"
+                                 class="img-thumbnail bg-light"
+                                 style="max-height:200px;"
+                                 alt="Xem trước"
+                                 onerror="this.onerror=null;this.src='@Url.Content("~/images/products/nophoto.png")';" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 fw-semibold">Mô tả</label>
+                        <div class="col-sm-9">
+                            <input type="text"
+                                   class="form-control"
+                                   name="Description"
+                                   value="@Model.Description"
+                                   placeholder="Nhập mô tả cho ảnh (nếu có)"
+                                   maxlength="255" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 fw-semibold">Thứ tự hiển thị</label>
+                        <div class="col-sm-9">
+                            <input type="number"
+                                   class="form-control"
+                                   name="DisplayOrder"
+                                   value="@Model.DisplayOrder"
+                                   min="0"
+                                   style="max-width: 12rem;" />
+                            <div class="form-text">Số nhỏ hơn sẽ được ưu tiên hiển thị trước.</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <label class="col-sm-3 fw-semibold">Trạng thái</label>
+                        <div class="col-sm-9">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="IsHidden" @(Model.IsHidden ? "checked" : "") />
+                                <input type="hidden" name="IsHidden" id="IsHiddenValue" value="@(Model.IsHidden ? "true" : "false")" />
+                                <label class="form-check-label" for="IsHidden">
+                                    Ẩn ảnh
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('IsHidden')?.addEventListener('change', function () {
+        var hiddenInput = document.getElementById('IsHiddenValue');
+        if (hiddenInput) {
+            hiddenInput.value = this.checked ? 'true' : 'false';
+        }
+    });
+</script>

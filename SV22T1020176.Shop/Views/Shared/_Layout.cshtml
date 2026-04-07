@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SV22T1020176.Shop</title>
+    <!-- CoreUI CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@@coreui/coreui@@5.0.0/dist/css/coreui.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/coreui-orange.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="c-app">
+
+    <!-- CoreUI Sidebar -->
+    <div class="sidebar sidebar-dark sidebar-fixed border-end-0 shadow" id="sidebar">
+        <div class="sidebar-header border-bottom border-white border-opacity-10 py-4 px-4">
+            <a href="/" class="sidebar-brand-full text-decoration-none text-white d-flex align-items-center gap-2">
+                <div class="bg-primary rounded-3 p-1 d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+                    <i class="bi bi-keyboard-fill fs-5"></i>
+                </div>
+                <span class="fw-900 fs-5 tracking-tighter">ORANGE<span class="text-primary">SHOP</span></span>
+            </a>
+            <button class="btn-close d-lg-none" type="button" data-coreui-dismiss="offcanvas" data-coreui-target="#sidebar" aria-label="Close"></button>
+        </div>
+        <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="">
+            <li class="nav-title uppercase fs-9 tracking-widest opacity-50 px-4 mb-2 mt-4">Menu Chính</li>
+            <li class="nav-item">
+                <a class="nav-link py-3 px-4 @(Context.Request.Path.Value == "/" ? "active" : "")" href="/">
+                    <i class="nav-icon bi bi-house-door fs-5 me-3"></i> Trang chủ
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-3 px-4 @(Context.Request.Path.Value?.StartsWith("/Product") == true ? "active" : "")" href="/Product">
+                    <i class="nav-icon bi bi-grid fs-5 me-3"></i> Tất cả sản phẩm
+                </a>
+            </li>
+            
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                <li class="nav-title uppercase fs-9 tracking-widest opacity-50 px-4 mb-2 mt-4">Cá nhân</li>
+                <li class="nav-item">
+                    <a class="nav-link py-3 px-4 @(Context.Request.Path.Value?.StartsWith("/Order") == true ? "active" : "")" href="/Order/ExploreHistory">
+                        <i class="nav-icon bi bi-receipt fs-5 me-3"></i> Đơn hàng của tôi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-3 px-4 @(Context.Request.Path.Value?.StartsWith("/Account/Profile") == true ? "active" : "")" href="/Account/MyProfile">
+                        <i class="nav-icon bi bi-person fs-5 me-3"></i> Thông tin tài khoản
+                    </a>
+                </li>
+            }
+        </ul>
+        <div class="sidebar-footer border-top border-white border-opacity-10 p-3">
+             <button class="sidebar-toggler w-100 border-0 rounded-3 py-2 bg-white bg-opacity-5 text-white opacity-50" type="button" data-coreui-toggle="unfoldable">
+                 <i class="bi bi-chevron-bar-left"></i>
+             </button>
+        </div>
+    </div>
+
+    <!-- Wrapper -->
+    <div class="wrapper d-flex flex-column min-vh-100 bg-light-subtle">
+        <!-- Header -->
+        <header class="header header-sticky mb-4 px-4 py-2 shadow-sm border-0 bg-white bg-opacity-90 backdrop-blur">
+            <div class="container-fluid d-flex align-items-center gap-3">
+                <button class="header-toggler px-md-0 me-md-3 border-0 bg-transparent text-dark shadow-none" type="button" onclick="coreui.Sidebar.getInstance(document.querySelector('#sidebar')).toggle()">
+                    <i class="bi bi-list fs-3"></i>
+                </button>
+
+                <!-- Search -->
+                <div class="header-search d-none d-lg-block flex-grow-1 mx-4" style="max-width: 500px;">
+                    <form action="/Product" method="get" class="position-relative">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted fs-7"></i>
+                        <input type="search" name="SearchValue" class="form-control border-0 bg-light rounded-pill py-2 ps-5 fs-7 shadow-none" 
+                               placeholder="Tìm sản phẩm bạn quan tâm..." value="@Context.Request.Query["SearchValue"]">
+                    </form>
+                </div>
+
+                <ul class="header-nav d-flex align-items-center gap-4 ms-auto">
+                    <!-- Cart -->
+                    <li class="nav-item">
+                        <a class="nav-link position-relative p-2 rounded-circle hover-bg-light transition-all shadow-none" href="/Cart" title="Giỏ hàng">
+                            <i class="bi bi-cart3 fs-4 text-dark"></i>
+                            <span id="cart-badge" class="badge rounded-pill bg-primary position-absolute top-0 start-100 translate-middle shadow-sm" 
+                                  style="display: none; font-size: 0.65rem; padding: 0.4em 0.6em; border: 2px solid white;">0</span>
+                        </a>
+                    </li>
+
+                    <!-- User Account -->
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle py-1 px-1 border rounded-pill d-flex align-items-center gap-2 hover-bg-light text-decoration-none shadow-none" 
+                               data-coreui-toggle="dropdown" href="#" role="button">
+                                <div class="bg-primary-subtle text-primary fw-900 rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-size: 0.85rem;">
+                                    @(User.FindFirst("DisplayName")?.Value?.Substring(0, 1).ToUpper() ?? "U")
+                                </div>
+                                <span class="d-none d-md-inline fs-7 text-dark fw-700 me-2">@(User.FindFirst("DisplayName")?.Value)</span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end p-2 border-0 shadow-lg mt-3 animate-in" style="border-radius: 1rem; min-width: 240px;">
+                                <div class="px-3 py-3 mb-2 border-bottom">
+                                    <h6 class="fw-800 mb-0">@(User.FindFirst("DisplayName")?.Value)</h6>
+                                    <span class="fs-8 text-muted">Chào mừng trở lại!</span>
+                                </div>
+                                <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3 rounded-3 text-muted fw-600" href="/Account/MyProfile">
+                                    <i class="bi bi-person-circle fs-5 opacity-50"></i> Thông tin cá nhân
+                                </a>
+                                <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3 rounded-3 text-muted fw-600" href="/Order/ExploreHistory">
+                                    <i class="bi bi-clock-history fs-5 opacity-50"></i> Lịch sử mua hàng
+                                </a>
+                                <div class="dropdown-divider mx-2"></div>
+                                <a class="dropdown-item d-flex align-items-center gap-3 py-2 px-3 text-danger rounded-3 fw-700" href="/Account/SignOff">
+                                    <i class="bi bi-box-arrow-right fs-5 opacity-50"></i> Đăng xuất tài khoản
+                                </a>
+                            </div>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item d-flex gap-2">
+                            <a class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold fs-8 border-2" href="/Account/Authenticate">Đăng nhập</a>
+                            <a class="btn btn-primary btn-sm rounded-pill px-4 fw-bold fs-8 shadow-sm" href="/Account/CreateAccount">Tham gia ngay</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </header>
+
+        <!-- Main Body Content -->
+        <main class="body flex-grow-1 px-4">
+            <div class="container-fluid">
+                <!-- Global Success Notification -->
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-primary d-flex align-items-center gap-3 border-0 shadow-sm mb-4 animate-in overflow-hidden p-3" style="border-radius: 1rem; border-left: 5px solid var(--cui-primary) !important;">
+                        <i class="bi bi-check-circle-fill fs-4"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-0">Thông báo thành công</h6>
+                            <span class="fs-7">@TempData["SuccessMessage"]</span>
+                        </div>
+                        <button type="button" class="btn-close shadow-none" data-coreui-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                @RenderBody()
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer mt-5 px-4 py-5 bg-white border-0 shadow-sm">
+            <div class="container-fluid">
+                <div class="row g-4 justify-content-between mb-4 pb-4 border-bottom">
+                    <div class="col-lg-4">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div class="bg-primary rounded-3 p-1 d-flex align-items-center justify-content-center" style="width:28px; height:28px;">
+                                <i class="bi bi-keyboard-fill fs-6 text-white"></i>
+                            </div>
+                            <span class="fw-900 fs-5">ORANGE<span class="text-primary">SHOP</span></span>
+                        </div>
+                        <p class="text-muted fs-7 lh-base" style="max-width: 300px;">Hệ thống cung cấp linh kiện bàn phím cơ và thiết bị ngoại vi hàng đầu Việt Nam.</p>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="text-muted fs-5 hover-primary"><i class="bi bi-facebook"></i></a>
+                            <a href="#" class="text-muted fs-5 hover-primary"><i class="bi bi-instagram"></i></a>
+                            <a href="#" class="text-muted fs-5 hover-primary"><i class="bi bi-youtube"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-lg-2">
+                        <h6 class="fw-800 text-dark mb-4">Sản phẩm</h6>
+                        <ul class="list-unstyled d-flex flex-column gap-2 fs-7">
+                            <li><a href="/Product" class="text-muted text-decoration-none hover-primary">Bàn phím cơ</a></li>
+                            <li><a href="/Product" class="text-muted text-decoration-none hover-primary">Keycaps</a></li>
+                            <li><a href="/Product" class="text-muted text-decoration-none hover-primary">Switches</a></li>
+                            <li><a href="/Product" class="text-muted text-decoration-none hover-primary">Phụ kiện</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-2">
+                        <h6 class="fw-800 text-dark mb-4">Hỗ trợ</h6>
+                        <ul class="list-unstyled d-flex flex-column gap-2 fs-7">
+                            <li><a href="#" class="text-muted text-decoration-none hover-primary">Chính sách bảo hành</a></li>
+                            <li><a href="#" class="text-muted text-decoration-none hover-primary">Vận chuẩn - Giao hàng</a></li>
+                            <li><a href="#" class="text-muted text-decoration-none hover-primary">Câu hỏi thường gặp</a></li>
+                            <li><a href="#" class="text-muted text-decoration-none hover-primary">Liên hệ</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-3">
+                        <h6 class="fw-800 text-dark mb-4">Đăng ký nhận tin</h6>
+                        <div class="input-group">
+                            <input type="email" class="form-control border-0 bg-light py-2 px-3 shadow-none rounded-start-pill fs-7" placeholder="Email của bạn...">
+                            <button class="btn btn-primary rounded-end-pill px-3 shadow-none fw-bold fs-7">Gửi</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 fs-9 uppercase tracking-widest text-muted fw-bold">
+                    <span>SV22T1020176 &copy; @DateTime.Now.Year - Đồ án lập trình web</span>
+                    <div class="d-flex gap-4">
+                        <a href="#" class="text-decoration-none text-muted">Điều khoản</a>
+                        <a href="#" class="text-decoration-none text-muted">Bảo mật</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Master Modals -->
+    <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg p-2 rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-800" id="globalConfirmTitle">Xác nhận</h5>
+                    <button type="button" class="btn-close shadow-none" data-coreui-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4 px-4 text-muted fs-7 lh-lg" id="globalConfirmMessage"></div>
+                <div class="modal-footer border-0 p-3 pt-0">
+                    <button type="button" class="btn btn-link text-decoration-none fw-bold text-muted px-4" id="globalConfirmBtnCancel">Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" id="globalConfirmBtnOk">Đồng ý</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="globalAlertModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg p-2 rounded-4">
+                <div class="modal-header border-0 pb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill text-primary"></i>
+                    <h5 class="modal-title fw-800" id="globalAlertTitle">Thông báo</h5>
+                    <button type="button" class="btn-close shadow-none" data-coreui-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4 px-4 text-muted fs-7 lh-lg" id="globalAlertMessage"></div>
+                <div class="modal-footer border-0 p-3 pt-0">
+                    <button type="button" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm" id="globalAlertBtnOk">Đã hiểu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@coreui/coreui@@5.0.0/dist/js/coreui.bundle.min.js"></script>
+    <script src="~/js/site.js"></script>
+    
+    <script>
+        // Modal logic with CoreUI Orange aesthetic
+        function showConfirmModal(options) {
+            return new Promise(function (resolve) {
+                var modalEl = document.getElementById('globalConfirmModal');
+                document.getElementById('globalConfirmTitle').textContent = options.title || 'Xác nhận';
+                document.getElementById('globalConfirmMessage').textContent = options.message || '';
+                var btnOk = document.getElementById('globalConfirmBtnOk');
+                var btnCancel = document.getElementById('globalConfirmBtnCancel');
+                btnOk.textContent = options.confirmText || 'Đồng ý';
+                btnCancel.textContent = options.cancelText || 'Hủy bỏ';
+
+                var resolved = false;
+                var modal = coreui.Modal.getOrCreateInstance(modalEl);
+
+                function finish(val) {
+                    if (resolved) return;
+                    resolved = true;
+                    btnOk.removeEventListener('click', onOk);
+                    btnCancel.removeEventListener('click', onCancel);
+                    modalEl.removeEventListener('hidden.coreui.modal', onHidden);
+                    modal.hide();
+                    resolve(val);
+                }
+                function onOk() { finish(true); }
+                function onCancel() { finish(false); }
+                function onHidden() { if(!resolved) finish(false); }
+
+                btnOk.addEventListener('click', onOk);
+                btnCancel.addEventListener('click', onCancel);
+                modalEl.addEventListener('hidden.coreui.modal', onHidden);
+                modal.show();
+            });
+        }
+
+        function showAlertModal(options) {
+             const msg = (typeof options === 'string') ? options : options.message;
+             const title = options.title || 'Thông báo';
+             return new Promise(function (resolve) {
+                var modalEl = document.getElementById('globalAlertModal');
+                document.getElementById('globalAlertTitle').textContent = title;
+                document.getElementById('globalAlertMessage').textContent = msg;
+                var btnOk = document.getElementById('globalAlertBtnOk');
+                var resolved = false;
+                var modal = coreui.Modal.getOrCreateInstance(modalEl);
+
+                function done() {
+                    if (resolved) return;
+                    resolved = true;
+                    btnOk.removeEventListener('click', onOk);
+                    modalEl.removeEventListener('hidden.coreui.modal', onHidden);
+                    resolve();
+                }
+                function onOk() { modal.hide(); done(); }
+                function onHidden() { if(!resolved) done(); }
+
+                btnOk.addEventListener('click', onOk);
+                modalEl.addEventListener('hidden.coreui.modal', onHidden);
+                modal.show();
+            });
+        }
+
+        // Cart Badge
+        function updateBadge(count) {
+            var badge = document.getElementById('cart-badge');
+            if (!badge) return;
+            count = parseInt(count) || 0;
+            var auth = @(User?.Identity?.IsAuthenticated == true ? "true" : "false");
+            var userId = "@(User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "")";
+            
+            if (auth && userId) localStorage.setItem('cart_count_' + userId, count);
+
+            if (count > 0 && auth) {
+                badge.textContent = count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Add to Cart with Toast
+        function addToCart(productId, count) {
+            if (count === undefined) count = 1;
+            fetch('/Cart/AppendProduct', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'productId=' + productId + '&count=' + count
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    updateBadge(data.itemCount);
+                    showToast(data.message);
+                } else if (data.requireLogin) {
+                    showConfirmModal({
+                        title: 'Yêu cầu đăng nhập',
+                        message: 'Bạn cần đăng nhập để thực hiện mua sắm tại cửa hàng của chúng tôi.',
+                        confirmText: 'Đăng nhập ngay'
+                    }).then(ok => { if(ok) window.location.href = data.redirectUrl; });
+                } else {
+                    showAlertModal(data.message || 'Hệ thống đang bận, vui lòng thử lại sau.');
+                }
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-orange shadow-lg d-flex align-items-center gap-3 p-3 text-white fw-bold animate-in';
+            toast.style = "position:fixed; bottom:2rem; right:2rem; z-index:10000; border-radius:1rem; background: #1e293b; min-width: 280px; border-bottom: 4px solid var(--cui-primary);";
+            toast.innerHTML = `<div class="bg-primary rounded-circle p-1 d-flex align-items-center justify-content-center" style="width:24px; height:24px;"><i class="bi bi-check-lg text-white"></i></div> ${msg}`;
+            document.body.appendChild(toast);
+            setTimeout(() => { 
+                toast.style.opacity = '0'; 
+                toast.style.transform = 'translateY(15px)'; 
+                setTimeout(() => toast.remove(), 500); 
+            }, 3500);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var auth = @(User?.Identity?.IsAuthenticated == true ? "true" : "false");
+            var userId = "@(User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "")";
+            if (auth && userId) {
+                var sc = localStorage.getItem('cart_count_' + userId);
+                if (sc !== null) updateBadge(sc);
+            }
+            fetch('/Cart/FetchCartCount').then(r => r.json()).then(d => updateBadge(d.count));
+        });
+    </script>
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .backdrop-blur { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .bg-light-subtle { background-color: #f7f9fc !important; }
+        .fs-7 { font-size: 0.875rem; }
+        .fs-8 { font-size: 0.75rem; }
+        .fs-9 { font-size: 0.65rem; }
+        .fw-800 { font-weight: 800; }
+        .fw-900 { font-weight: 900; }
+        .tracking-widest { letter-spacing: 0.15em; }
+        .tracking-tighter { letter-spacing: -0.05em; }
+        .uppercase { text-transform: uppercase; }
+        .hover-bg-light:hover { background-color: #f1f5f9; }
+        .hover-primary:hover { color: var(--cui-primary) !important; }
+        .transition-all { transition: all 0.25s ease; }
+        .object-fit-cover { object-fit: cover; }
+        
+        @@keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: slideIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; }
+        
+        .sidebar { --cui-sidebar-bg: #0f172a; --cui-sidebar-color: #f8fafc; --cui-sidebar-nav-link-color: #94a3b8; --cui-sidebar-nav-link-active-bg: rgba(249, 115, 22, 0.15); --cui-sidebar-nav-link-active-color: #f97316; }
+        .nav-link.active { font-weight: 700; }
+    </style>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

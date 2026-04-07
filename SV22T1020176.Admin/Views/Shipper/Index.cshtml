@@ -1,0 +1,53 @@
+﻿@using SV22T1020176.Admin
+@using SV22T1020176.Models.Constants
+@model SV22T1020176.Models.Common.PaginationSearchInput
+@{
+    ViewBag.Title = "Quản lý Người giao hàng";
+}
+@section PageToolBar {
+    @if (ApplicationContext.HasPermission(Permissions.ShipperCreate))
+    {
+        <a href="~/Shipper/Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>
+            Bổ sung
+        </a>
+    }
+}
+<div class="card mb-3">
+    <div class="card-body">
+        <form id="formSearch" action="~/Shipper/Search" data-target="searchResult">
+            <div class="input-group">
+                <input id="searchValue" name="searchValue" type="text"
+                       class="form-control"
+                       placeholder="Nhập tên người giao hàng hoặc số điện thoại..." autofocus
+                       value="@Model.SearchValue" />
+                <button type="submit" class="btn btn-info d-flex align-items-center">
+                    <i class="bi bi-search me-1"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="searchResult">
+    <!-- Search Results will be loaded here -->
+</div>
+
+@section Scripts {
+    <script>
+        function doSearch(page) {
+            paginationSearch(null, document.getElementById("formSearch"), page);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            doSearch(@Model.Page);
+
+            const formSearch = document.getElementById("formSearch");
+            if (formSearch) {
+                formSearch.addEventListener("submit", function (e) {
+                    paginationSearch(e, this, 1);
+                });
+            }
+        });
+    </script>
+}

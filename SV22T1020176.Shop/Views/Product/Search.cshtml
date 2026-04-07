@@ -1,0 +1,121 @@
+﻿@using SV22T1020176.Models.Catalog
+@using SV22T1020176.Models.Common
+@model PagedResult<Product>
+@{
+    Layout = null;
+}
+
+@if (Model.DataItems.Count == 0)
+{
+    <div class="md-empty-state">
+        <div class="md-empty-icon">
+            <i class="bi bi-search"></i>
+        </div>
+        <h3 style="font-size:1.25rem;font-weight:700;color:var(--md-on-surface);">Không tìm thấy kết quả nào</h3>
+        <p class="text-muted-md mt-2" style="max-width:360px;">Rất tiếc, chúng tôi không tìm thấy mặt hàng nào phù hợp với bộ lọc và từ khóa của bạn.</p>
+        <button onclick="resetFilter()" class="md-btn md-btn-primary mt-6">
+            <i class="bi bi-arrow-counterclockwise"></i> Xóa bộ lọc và thử lại
+        </button>
+    </div>
+}
+else
+{
+    <!-- Product Grid -->
+    <div class="row g-4">
+        @foreach (var p in Model.DataItems)
+        {
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="md-product-card">
+                    <a href="/Product/Detail/@p.ProductID" class="product-img-wrap">
+                        @if (string.IsNullOrEmpty(p.Photo))
+                        {
+                            <img src="https://placehold.co/400x400/e8def8/6750a4?text=No+Photo"
+                                 alt="@p.ProductName" />
+                        }
+                        else if (p.Photo.StartsWith("http"))
+                        {
+                            <img src="@p.Photo" alt="@p.ProductName" />
+                        }
+                        else
+                        {
+                            <img src="~/images/products/@p.Photo" alt="@p.ProductName" />
+                        }
+
+                        @if (!p.IsSelling)
+                        {
+                            <div class="sold-out-overlay">
+                                <span class="sold-out-badge">Ngừng bán</span>
+                            </div>
+                        }
+
+                        <span class="unit-badge">@p.Unit</span>
+                    </a>
+
+                    <div class="product-body">
+                        <a href="/Product/Detail/@p.ProductID" class="product-name">@p.ProductName</a>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <p class="product-price mb-0">
+                                @p.Price.ToString("N0") <small>đ</small>
+                            </p>
+                        </div>
+
+                        @if (p.IsSelling == true)
+                        {
+                            <button type="button" onclick="addToCart(@p.ProductID)"
+                                    class="md-btn md-btn-primary w-100 mt-3"
+                                    style="font-size:0.8125rem;padding:8px 16px;">
+                                <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Pagination -->
+@if (Model.PageCount > 1)
+{
+    <div class="d-flex justify-content-center mt-5 pt-4" style="border-top:1px solid var(--md-outline-variant);">
+        <ul class="md-pagination mb-0">
+            @if (Model.Page > 1)
+            {
+                <li class="page-item">
+                    <a href="javascript:void(0)" onclick="doSearch(@(Model.Page - 1))" class="page-link">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            }
+
+            @for (int p = 1; p <= Model.PageCount; p++)
+            {
+                if (p == Model.Page)
+                {
+                    <li class="page-item active">
+                        <span class="page-link">@p</span>
+                    </li>
+                }
+                else if (p <= 3 || p > Model.PageCount - 2 || Math.Abs(p - Model.Page) <= 1)
+                {
+                    <li class="page-item">
+                        <a href="javascript:void(0)" onclick="doSearch(@p)" class="page-link">@p</a>
+                    </li>
+                }
+                else if (p == 4 || p == Model.PageCount - 2)
+                {
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                }
+            }
+
+            @if (Model.Page < Model.PageCount)
+            {
+                <li class="page-item">
+                    <a href="javascript:void(0)" onclick="doSearch(@(Model.Page + 1))" class="page-link">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            }
+        </ul>
+    </div>
+}

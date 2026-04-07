@@ -1,0 +1,108 @@
+@using SV22T1020176.Models.Catalog
+@using SV22T1020176.Models.Common
+@{
+    var categories = ViewBag.Categories as PagedResult<Category>;
+    int currentCategoryID = ViewBag.CurrentCategoryID ?? 0;
+    string currentSearchValue = ViewBag.CurrentSearchValue ?? "";
+}
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden sticky-top animate-in" style="top: 100px; z-index: 100;">
+    <div class="card-header bg-white border-0 py-4 ps-4 d-flex align-items-center gap-3">
+        <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px;">
+            <i class="bi bi-funnel-fill fs-5"></i>
+        </div>
+        <h5 class="mb-0 fw-800 text-dark">Bộ lọc sản phẩm</h5>
+    </div>
+    <div class="card-body p-4 pt-0">
+        <form id="formSearch" method="get" class="d-flex flex-column gap-4">
+            <input type="hidden" id="searchValueState" name="SearchValue" value="@currentSearchValue" />
+
+            <!-- Category -->
+            <div class="form-group">
+                <label class="form-label fs-7 fw-700 text-secondary ps-1 mb-2">Danh mục</label>
+                <div class="position-relative">
+                    <select id="searchCategoryID" name="CategoryID" class="form-select custom-select-premium border-0 bg-light rounded-3 py-2 ps-3 fs-7 shadow-none">
+                        <option value="0" selected="@(currentCategoryID == 0)">Tất cả danh mục</option>
+                        @foreach (var c in categories?.DataItems ?? new List<Category>())
+                        {
+                            <option value="@c.CategoryID" selected="@(c.CategoryID == currentCategoryID)">@c.CategoryName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Price Range Preset -->
+            <div class="form-group">
+                <label class="form-label fs-7 fw-700 text-secondary ps-1 mb-2">Khoảng giá nhanh</label>
+                <div class="position-relative">
+                    <select id="pricePreset" class="form-select custom-select-premium border-0 bg-light rounded-3 py-2 ps-3 fs-7 shadow-none" onchange="applyPricePreset()">
+                        <option value="">Tất cả giá</option>
+                        <option value="0,100000">Dưới 100.000đ</option>
+                        <option value="100000,200000">100.000đ - 200.000đ</option>
+                        <option value="200000,500000">200.000đ - 500.000đ</option>
+                        <option value="500000,1000000">500.000đ - 1.000.000đ</option>
+                        <option value="1000000,">Trên 1.000.000đ</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Price Range Custom -->
+            <div class="form-group">
+                <label class="form-label fs-7 fw-700 text-secondary ps-1 mb-2">Tự nhập (VNĐ)</label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="number" name="MinPrice" id="minPriceInput"
+                               value="@(ViewBag.CurrentMinPrice > 0 ? ViewBag.CurrentMinPrice : "")"
+                               placeholder="Từ" class="form-control border-0 bg-light rounded-3 py-2 fs-7 shadow-none text-center" min="0">
+                    </div>
+                    <div class="col-6">
+                        <input type="number" name="MaxPrice" id="maxPriceInput"
+                               value="@(ViewBag.CurrentMaxPrice > 0 ? ViewBag.CurrentMaxPrice : "")"
+                               placeholder="Đến" class="form-control border-0 bg-light rounded-3 py-2 fs-7 shadow-none text-center" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="Page" value="1" />
+
+            <div class="d-flex flex-column gap-3 mt-3">
+                <button type="button" onclick="doSearch(1)" class="btn btn-primary btn-search-premium rounded-pill py-3 fw-800 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-search fs-5"></i> Tìm kiếm
+                </button>
+                <div class="text-center mt-1">
+                    <button type="button" onclick="resetFilter()" class="btn btn-link text-muted fs-8 fw-700 text-decoration-none hover-primary transition-all opacity-75">
+                        Xóa bộ lọc
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .custom-select-premium {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1.25rem center;
+        background-size: 14px 10px;
+        transition: all 0.3s ease;
+    }
+    .custom-select-premium:focus {
+        background-color: #fff !important;
+        border: 2px solid var(--cui-primary) !important;
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1) !important;
+    }
+    .fw-800 { font-weight: 800; }
+    .bg-primary-subtle { background-color: #fff7ed !important; }
+    .btn-search-premium {
+        background: linear-gradient(135deg, var(--cui-primary), #fb923c);
+        border: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-search-premium:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(249, 115, 22, 0.35);
+        background: linear-gradient(135deg, #ea580c, #f97316);
+    }
+</style>
