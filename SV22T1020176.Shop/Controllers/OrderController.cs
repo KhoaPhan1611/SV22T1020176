@@ -20,146 +20,158 @@ public class OrderController : Controller
     private void UpdateCartStorage(List<CartItem> basket) => CartSessionHelper.SaveCart(HttpContext, basket);
 
     /// <summary>
-    /// Hiển thị danh sách các đơn hàng người dùng đã thực hiện.
+    /// Lấy ID người dùng được xác thực hiện tại, xây dựng bộ tiêu chí tìm kiếm bao gồm trạng thái
+    /// đơn hàng (mới, đã duyệt, đang giao, hoàn thành...), từ khóa tìm kiếm, và số trang. Truy vấn danh
+    /// sách đơn hàng từ cơ sở dữ liệu, sau đó với mỗi đơn hàng, lấy danh sách chi tiết sản phẩm tương ứng
+    /// để hiển thị thông tin sản phẩm từng đơn trực tiếp trên trang xem lịch sử mà không cần click vào chi tiết.
     /// </summary>
     public async Task<IActionResult> ExploreHistory(int status = 0, int page = 1, string searchValue = "")
     {
-        var uidClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(uidClaim, out int accountId)) return RedirectToAction("Login", "Account");
+        var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(currentUserIdStr, out int userId)) 
+            return RedirectToAction("Authenticate", "Account");
 
-        var filterInput = new OrderSearchInput
+        var searchCriteria = new OrderSearchInput
         {
-            Page = page,
+            Page = Math.Max(1, page),
             PageSize = DEFAULT_PAGE_LIMIT,
             Status = (OrderStatusEnum)status,
-            SearchValue = searchValue ?? string.Empty,
-            CustomerID = accountId
+            SearchValue = searchValue?.Trim() ?? string.Empty,
+            CustomerID = userId
         };
 
-        var historyContent = await SalesDataService.ListOrdersAsync(filterInput);
+        var orderHistory = await SalesDataService.ListOrdersAsync(searchCriteria).ConfigureAwait(false);
         ViewBag.Status = status;
         ViewBag.SearchValue = searchValue;
 
-        // Tập hợp chi tiết từng sản phẩm trong mỗi đơn hàng để hiển thị nhanh
-        var itemsMapping = new Dictionary<int, List<OrderDetailViewInfo>>();
-        foreach (var entry in historyContent.DataItems)
+        var detailsByOrder = new Dictionary<int, List<OrderDetailViewInfo>>();
+        foreach (var order in orderHistory.DataItems)
         {
-            var detailEntries = await SalesDataService.ListDetailsAsync(entry.OrderID);
-            itemsMapping[entry.OrderID] = detailEntries;
+            var details = await SalesDataService.ListDetailsAsync(order.OrderID).ConfigureAwait(false);
+            detailsByOrder[order.OrderID] = details;
         }
-        ViewBag.OrderDetails = itemsMapping;
+        ViewBag.OrderDetails = detailsByOrder;
 
-        return View("History", historyContent);
+        return View("History", orderHistory);
     }
 
     /// <summary>
-    /// Xem chi tiết và hành trình của một mã đơn h àng cụ thể.
+    /// Lấy ID đơn hàng từ URL, xác minh rằng đơn hàng thuộc về người dùng được xác thực hiện tại
+    /// (kiểm tra CustomerID khớp). Nếu hợp lệ, truy vấn thông tin chi tiết đơn hàng bao gồm
+    /// trạng thái hiện tại, thời gian đặt, thông tin giao hàng, hãng vận chuyển; và danh sách
+    /// tất cả sản phẩm trong đơn hàng. Hiển thị trên giao diện chi tiết để khách hàng theo dõi
+    /// tiến trình giao hàng và xem các mặt hàng đã mua.
     /// </summary>
     public async Task<IActionResult> TrackOrder(int id)
     {
-        var uidStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(uidStr, out int cid)) return RedirectToAction("Login", "Account");
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out int cid)) 
+            return RedirectToAction("Authenticate", "Account");
 
-        var targetOrder = await SalesDataService.GetOrderAsync(id);
-        if (targetOrder == null || targetOrder.CustomerID != cid)
-        {
+        var orderData = await SalesDataService.GetOrderAsync(id).ConfigureAwait(false);
+        if (orderData is null || orderData.CustomerID != cid)
             return RedirectToAction(nameof(ExploreHistory));
-        }
 
-        ViewBag.Details = await SalesDataService.ListDetailsAsync(id);
-        return View("Status", targetOrder);
+        var lineItems = await SalesDataService.ListDetailsAsync(id).ConfigureAwait(false);
+        ViewBag.Details = lineItems;
+        
+        return View("Status", orderData);
     }
 
     /// <summary>
-    /// Hủy bỏ yêu cầu đặt hàng (Chỉ áp dụng khi đơn hàng chưa được xử lý vận chuyển).
+    /// Cho phép khách hàng được xác thực hủy đơn hàng nếu và chỉ nếu đơn hàng đang ở trạng thái
+    /// "Mới" hoặc "Đã Duyệt" (chưa bắt đầu giao hàng). Phương thức kiểm tra quyền sở hữu đơn hàng,
+    /// kiểm tra trạng thái cho phép hủy, gọi dịch vụ để cập nhật trạng thái đơn hàng thành "Đã Hủy",
+    /// và thông báo kết quả cho khách hàng qua TempData.
     /// </summary>
     public async Task<IActionResult> TerminateOrder(int id)
     {
-        var authId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(authId, out int memberId)) return RedirectToAction("Login", "Account");
+        var subjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(subjectId, out int memberId)) 
+            return RedirectToAction("Authenticate", "Account");
 
-        var target = await SalesDataService.GetOrderAsync(id);
-        if (target == null || target.CustomerID != memberId)
-        {
+        var orderRecord = await SalesDataService.GetOrderAsync(id).ConfigureAwait(false);
+        if (orderRecord is null || orderRecord.CustomerID != memberId)
             return RedirectToAction(nameof(ExploreHistory));
-        }
 
-        // Kiểm soát điều kiện hủy: Chỉ cho phép khi trạng thái là Mới hoặc Đã Duyệt
-        bool canAbort = target.Status == OrderStatusEnum.New || target.Status == OrderStatusEnum.Accepted;
-        if (!canAbort)
+        bool canCancel = orderRecord.Status is OrderStatusEnum.New or OrderStatusEnum.Accepted;
+        if (!canCancel)
         {
             TempData["ErrorMessage"] = "Yêu cầu hủy không thành công: Đơn hàng đang được vận chuyển.";
             return RedirectToAction(nameof(TrackOrder), new { id });
         }
 
-        bool result = await SalesDataService.CancelOrderAsync(id);
-        if (result)
-        {
-            TempData["SuccessMessage"] = "Đã tiếp nhận yêu cầu hủy đơn hàng thành công.";
-        }
-        else
-        {
-            TempData["ErrorMessage"] = "Hệ thống gặp sự cố khi xử lý lệnh hủy. Thử lại sau.";
-        }
+        bool cancelSuccess = await SalesDataService.CancelOrderAsync(id).ConfigureAwait(false);
+        
+        TempData[cancelSuccess ? "SuccessMessage" : "ErrorMessage"] = 
+            cancelSuccess 
+                ? "Đã tiếp nhận yêu cầu hủy đơn hàng thành công." 
+                : "Hệ thống gặp sự cố khi xử lý lệnh hủy. Thử lại sau.";
 
         return RedirectToAction(nameof(ExploreHistory));
     }
 
     /// <summary>
-    /// Mua lại các sản phẩm từ một đơn hàng cũ (Nạp lại vào giỏ hàng hiện tại).
+    /// Cho phép khách hàng được xác thực tạo lại đơn hàng trước đó bằng cách sao chép tất cả sản phẩm
+    /// từ đơn hàng cũ vào giỏ hàng hiện tại. Phương thức kiểm tra quyền sở hữu đơn hàng, truy vấn danh
+    /// sách chi tiết sản phẩm trong đơn cũ, kiểm tra xem mỗi sản phẩm có còn được kinh doanh hay không,
+    /// và thêm những sản phẩm khả dụng vào giỏ hàng (tăng số lượng nếu sản phẩm đã có). Thông báo số
+    /// lượng sản phẩm đã thêm hoặc thất bại nếu không có sản phẩm nào khả dụng.
     /// </summary>
     public async Task<IActionResult> DuplicateOrder(int id)
     {
-        var userIdentity = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdentity, out int ownerId)) return RedirectToAction("Login", "Account");
+        var userClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userClaim, out int ownerId)) 
+            return RedirectToAction("Authenticate", "Account");
 
-        var sourceOrder = await SalesDataService.GetOrderAsync(id);
-        if (sourceOrder == null || sourceOrder.CustomerID != ownerId)
-        {
+        var sourceOrder = await SalesDataService.GetOrderAsync(id).ConfigureAwait(false);
+        if (sourceOrder?.CustomerID != ownerId)
             return RedirectToAction(nameof(ExploreHistory));
-        }
 
-        var sourceDetails = await SalesDataService.ListDetailsAsync(id);
-        if (!sourceDetails.Any())
+        var orderLineItems = await SalesDataService.ListDetailsAsync(id).ConfigureAwait(false);
+        if (orderLineItems.Count == 0)
         {
             TempData["ErrorMessage"] = "Không tìm thấy dữ liệu sản phẩm cho đơn hàng này.";
             return RedirectToAction(nameof(ExploreHistory));
         }
 
-        var currentBasket = LoadCurrentUserCart();
-        int successAdditions = 0;
+        var cartData = LoadCurrentUserCart();
+        int addedCount = 0;
 
-        foreach (var detail in sourceDetails)
+        foreach (var lineDetail in orderLineItems)
         {
-            var freshProduct = await CatalogDataService.GetProductAsync(detail.ProductID);
-            if (freshProduct != null && freshProduct.IsSelling == true)
+            var productRecord = await CatalogDataService.GetProductAsync(lineDetail.ProductID).ConfigureAwait(false);
+            
+            if (productRecord?.IsSelling != true)
+                continue;
+
+            var existingInCart = cartData.FirstOrDefault(c => c.ProductID == lineDetail.ProductID);
+            
+            if (existingInCart != null)
             {
-                var duplicateInCart = currentBasket.Find(c => c.ProductID == detail.ProductID);
-                if (duplicateInCart != null)
-                {
-                    duplicateInCart.Quantity += detail.Quantity;
-                }
-                else
-                {
-                    currentBasket.Add(new CartItem
-                    {
-                        ProductID = freshProduct.ProductID,
-                        ProductName = freshProduct.ProductName,
-                        Photo = freshProduct.Photo ?? string.Empty,
-                        Price = freshProduct.Price,
-                        Unit = freshProduct.Unit,
-                        Quantity = detail.Quantity
-                    });
-                }
-                successAdditions++;
+                existingInCart.Quantity += lineDetail.Quantity;
             }
+            else
+            {
+                cartData.Add(new CartItem
+                {
+                    ProductID = productRecord.ProductID,
+                    ProductName = productRecord.ProductName,
+                    Photo = productRecord.Photo ?? string.Empty,
+                    Price = productRecord.Price,
+                    Unit = productRecord.Unit,
+                    Quantity = lineDetail.Quantity
+                });
+            }
+            
+            addedCount++;
         }
 
-        UpdateCartStorage(currentBasket);
+        UpdateCartStorage(cartData);
 
-        if (successAdditions > 0)
+        if (addedCount > 0)
         {
-            TempData["SuccessMessage"] = $"Đã sao chép {successAdditions} mặt hàng từ đơn #{id} vào giỏ hàng.";
+            TempData["SuccessMessage"] = $"Đã sao chép {addedCount} mặt hàng từ đơn #{id} vào giỏ hàng.";
         }
         else
         {

@@ -38,125 +38,136 @@ public class CartController : Controller
     }
 
     /// <summary>
-    /// Hiển thị danh sách các mặt hàng trong giỏ.
+    /// Truy xuất danh sách sản phẩm hiện đang được lưu trữ trong giỏ hàng của phiên làm việc hiện tại
+    /// từ session storage và trình bày chúng trên giao diện người dùng. Danh sách này bao gồm tên sản phẩm,
+    /// hình ảnh, giá bán, số lượng, đơn vị tính, và tổng giá của mỗi mặt hàng cùng tổng giỏ hàng.
     /// </summary>
     public IActionResult Index() => View(LoadBasket());
 
     /// <summary>
-    /// Thêm một mặt hàng mới vào giỏ hàng của người dùng.
+    /// Tiếp nhận yêu cầu thêm sản phẩm từ khách hàng được xác thực. Phương thức kiểm tra xem sản phẩm
+    /// có tồn tại trong cơ sở dữ liệu và đang được kinh doanh hay không. Nếu sản phẩm đã tồn tại trong giỏ
+    /// hiện tại, hệ thống tăng số lượng; nếu không, thêm mục mới vào giỏ. Sau cùng, persistance giỏ
+    /// hàng cập nhật vào session và trả về JSON response với trạng thái thành công/thất bại.
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AppendProduct(int productId, int count = 1)
     {
-        // Xác thực người dùng trước khi cho phép thao tác giỏ hàng
         if (User?.Identity?.IsAuthenticated != true)
         {
             return Json(new
             {
                 success = false,
                 requireLogin = true,
-                redirectUrl = Url.Action("Login", "Account", new { returnUrl = "/Cart" }),
+                redirectUrl = Url.Action("Authenticate", "Account", new { returnUrl = "/Cart" }),
                 message = "Hệ thống yêu cầu đăng nhập để quản lý giỏ hàng."
             });
         }
 
-        count = Math.Max(1, count); // Quy định số lượng tối thiểu là 1
+        var quantityRequested = Math.Clamp(count, 1, int.MaxValue);
+        var cartSession = LoadBasket();
+        var existingItem = cartSession.FirstOrDefault(e => e.ProductID == productId);
 
-        var basket = LoadBasket();
-        var match = basket.Find(x => x.ProductID == productId);
-
-        if (match != null)
+        if (existingItem != null)
         {
-            match.Quantity += count;
+            existingItem.Quantity += quantityRequested;
         }
         else
         {
-            var itemInfo = await CatalogDataService.GetProductAsync(productId);
-            if (itemInfo == null)
-            {
+            var productInfo = await CatalogDataService.GetProductAsync(productId).ConfigureAwait(false);
+            
+            if (productInfo is null)
                 return Json(new { success = false, message = "Thông tin sản phẩm không khả dụng." });
-            }
-            if (!itemInfo.IsSelling)
-            {
-                return Json(new { success = false, message = "Mặt hàng này hiện tại không còn kinh doanh." });
-            }
 
-            basket.Add(new CartItem
+            if (!productInfo.IsSelling)
+                return Json(new { success = false, message = "Mặt hàng này hiện tại không còn kinh doanh." });
+
+            var newCartEntry = new CartItem
             {
-                ProductID = itemInfo.ProductID,
-                ProductName = itemInfo.ProductName,
-                Photo = itemInfo.Photo ?? string.Empty,
-                Price = itemInfo.Price,
-                Unit = itemInfo.Unit,
-                Quantity = count
-            });
+                ProductID = productInfo.ProductID,
+                ProductName = productInfo.ProductName,
+                Photo = productInfo.Photo ?? string.Empty,
+                Price = productInfo.Price,
+                Unit = productInfo.Unit,
+                Quantity = quantityRequested
+            };
+            
+            cartSession.Add(newCartEntry);
         }
 
-        PersistBasket(basket);
-        return Json(new { 
+        PersistBasket(cartSession);
+        return Json(new 
+        { 
             success = true, 
             itemCount = CountBasketEntries(), 
-            message = $"Thành công! Đã thêm \"{basket.Last().ProductName}\" vào giỏ." 
+            message = $"Thành công! Đã thêm \"{cartSession.FirstOrDefault(i => i.ProductID == productId)?.ProductName}\" vào giỏ." 
         });
     }
 
     /// <summary>
-    /// Cập nhật số lượng của một mặt hàng cụ thể trong giỏ.
+    /// Nhận yêu cầu thay đổi số lượng mua của một sản phẩm đã có trong giỏ hàng. Phương thức tìm kiếm
+    /// mục sản phẩm theo ID, cập nhật trường number lượng với giá trị mới, và lưu lại toàn bộ giỏ
+    /// vào session. Trả về JSON response chứa giá tiền từng mục (subtotal) và tổng giỏ hàng (total)
+    /// để giao diện có thể cập nhật dynamically mà không cần tải lại trang.
     /// </summary>
     [HttpPost]
     public IActionResult ModifyQuantity(int productId, int count)
     {
         if (User?.Identity?.IsAuthenticated != true)
-        {
             return Json(new { success = false, requireLogin = true, message = "Hết phiên đăng nhập." });
-        }
 
-        count = Math.Max(1, count);
-
-        var basket = LoadBasket();
-        var targetEntry = basket.FirstOrDefault(x => x.ProductID == productId);
+        var adjustedCount = Math.Clamp(count, 1, int.MaxValue);
+        var basketData = LoadBasket();
+        var targetProduct = basketData.FirstOrDefault(x => x.ProductID == productId);
         
-        if (targetEntry != null)
+        if (targetProduct is null)
+            return Json(new { success = false });
+
+        targetProduct.Quantity = adjustedCount;
+        PersistBasket(basketData);
+        
+        return Json(new
         {
-            targetEntry.Quantity = count;
-            PersistBasket(basket);
-            return Json(new
-            {
-                success = true,
-                subtotal = targetEntry.TotalPrice.ToString("N0"),
-                total = basket.Sum(x => x.TotalPrice).ToString("N0")
-            });
-        }
-        return Json(new { success = false });
+            success = true,
+            subtotal = targetProduct.TotalPrice.ToString("N0"),
+            total = basketData.Sum(x => x.TotalPrice).ToString("N0")
+        });
     }
 
     /// <summary>
-    /// Loại bỏ một mặt hàng ra khỏi danh sách giỏ hàng.
+    /// Xóa hoàn toàn một sản phẩm cụ thể khỏi giỏ hàng dựa trên ID sản phẩm. Phương thức tìm kiếm
+    /// vị trí của mục sản phẩm trong danh sách, loại bỏ nó nếu tồn tại, và cập nhật giỏ
+    /// về session storage. Gửi trả JSON response bao gồm tổng giỏ hàng cập nhật và số lượng
+    /// mục còn lại để người dùng thấy sự thay đổi ngay tức thì.
     /// </summary>
     [HttpPost]
     public IActionResult DeleteEntry(int productId)
     {
-        if (User?.Identity?.IsAuthenticated != true) return Json(new { success = false });
+        if (User?.Identity?.IsAuthenticated != true) 
+            return Json(new { success = false });
 
-        var basket = LoadBasket();
-        var entryToRemove = basket.Find(x => x.ProductID == productId);
+        var basketData = LoadBasket();
+        var itemToRemove = basketData.FirstOrDefault(x => x.ProductID == productId);
         
-        if (entryToRemove != null)
+        if (itemToRemove is null)
+            return Json(new { success = false });
+
+        basketData.Remove(itemToRemove);
+        PersistBasket(basketData);
+        
+        return Json(new
         {
-            basket.Remove(entryToRemove);
-            PersistBasket(basket);
-            return Json(new
-            {
-                success = true,
-                total = basket.Sum(x => x.TotalPrice).ToString("N0"),
-                itemCount = basket.Count
-            });
-        }
-        return Json(new { success = false });
+            success = true,
+            total = basketData.Sum(x => x.TotalPrice).ToString("N0"),
+            itemCount = basketData.Count
+        });
     }
 
     /// <summary>
-    /// Xóa toàn bộ nội dung giỏ hàng hiện tại.
+    /// Làm trống hoàn toàn giỏ hàng của người dùng bằng cách xóa tất cả các mục được lưu trữ trong session.
+    /// Hành động này thường được sử dụng khi người dùng muốn bắt đầu lại từ đầu hoặc hủy bỏ tất cả
+    /// các sản phẩm đã chọn. Sau khi làm trống, hệ thống chuyển hướng người dùng về trang giỏ hàng
+    /// để hiển thị trạng thái giỏ rỗng.
     /// </summary>
     [HttpPost]
     public IActionResult EmptyBasket()
@@ -166,30 +177,41 @@ public class CartController : Controller
     }
 
     /// <summary>
-    /// Chuyển tới giao diện điền thông tin giao hàng và xác nhận thanh toán.
+    /// Chỉ có người dùng được xác thực mới truy cập được phương thức này. Nó kiểm tra xem có ít nhất
+    /// một mục sản phẩm được chọn trong giỏ hay không. Nếu có, lấy thông tin hồ sơ khách hàng từ cơ sở
+    /// dữ liệu, danh sách các hãng vận chuyển khả dụng (shipper), và hiển thị biểu mẫu checkout để
+    /// người dùng nhập/xác nhận thông tin giao hàng và chọn phương thức vận chuyển.
     /// </summary>
     [Authorize]
     public async Task<IActionResult> Checkout()
     {
-        var selectedItems = FilterSelectedEntries();
-        if (!selectedItems.Any())
+        var toOrderItems = FilterSelectedEntries();
+        if (toOrderItems.Count == 0)
         {
             TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một sản phẩm để tiến hành đặt hàng.";
             return RedirectToAction(nameof(Index));
         }
 
-        var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(accountId, out int parsedId)) return RedirectToAction("Login", "Account");
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out int buyerId)) 
+            return RedirectToAction("Authenticate", "Account");
 
-        var profile = await PartnerDataService.GetCustomerAsync(parsedId);
-        ViewBag.Cart = selectedItems;
-        ViewBag.Shippers = await PartnerDataService.ListShippersAsync(new PaginationSearchInput { PageSize = 100 });
+        var customerData = await PartnerDataService.GetCustomerAsync(buyerId).ConfigureAwait(false);
+        var availableShippers = await PartnerDataService.ListShippersAsync(
+            new PaginationSearchInput { PageSize = 100 }).ConfigureAwait(false);
 
-        return View(profile);
+        ViewBag.Cart = toOrderItems;
+        ViewBag.Shippers = availableShippers;
+
+        return View(customerData);
     }
 
     /// <summary>
-    /// Hoàn tất quy trình đặt hàng và lưu vào cơ sở dữ liệu.
+    /// Tiếp nhận thông tin hoàn chỉnh từ biểu mẫu checkout bao gồm tên/điện thoại người nhận, địa chỉ
+    /// giao hàng, tỉnh/thành phố, lựa chọn hãng vận chuyển. Xác thực tất cả dữ liệu bắt buộc đã được cung cấp
+    /// đầy đủ. Tạo bản ghi đơn hàng mới trong cơ sở dữ liệu cùng với chi tiết từng sản phẩm tương ứng,
+    /// cập nhật giỏ hàng bằng cách xóa các mục đã thanh toán, và chuyển hướng người dùng tới trang
+    /// xem chi tiết/theo dõi đơn hàng vừa tạo.
     /// </summary>
     [Authorize]
     [HttpPost]
@@ -201,72 +223,83 @@ public class CartController : Controller
         int? shipperID,
         string note = "")
     {
-        var purchaseItems = FilterSelectedEntries();
-        if (!purchaseItems.Any()) return RedirectToAction(nameof(Index));
+        var itemsToCheckout = FilterSelectedEntries();
+        if (!itemsToCheckout.Any()) 
+            return RedirectToAction(nameof(Index));
 
         var customerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(customerIdStr, out int customerId)) return RedirectToAction("Login", "Account");
+        if (!int.TryParse(customerIdStr, out int cstmrId)) 
+            return RedirectToAction("Authenticate", "Account");
 
-        // Ràng buộc dữ liệu bắt buộc cho việc giao vận
-        if (string.IsNullOrWhiteSpace(recipientName)) ModelState.AddModelError(nameof(recipientName), "Họ tên người nhận là bắt buộc.");
-        if (string.IsNullOrWhiteSpace(recipientPhone)) ModelState.AddModelError(nameof(recipientPhone), "Số điện thoại liên lạc không được để trống.");
-        if (string.IsNullOrWhiteSpace(deliveryAddress)) ModelState.AddModelError(nameof(deliveryAddress), "Địa chỉ nhận hàng không hợp lệ.");
-        if (string.IsNullOrWhiteSpace(deliveryProvince)) ModelState.AddModelError(nameof(deliveryProvince), "Chưa chọn khu vực tỉnh/thành phố.");
-        if (!shipperID.HasValue || shipperID.Value <= 0) ModelState.AddModelError(nameof(shipperID), "Vui lòng lựa chọn đơn vị vận chuyển.");
-
-        if (!ModelState.IsValid)
+        Func<bool> ValidateDeliveryInfo = () =>
         {
-            ViewBag.Cart = purchaseItems;
-            ViewBag.Shippers = await PartnerDataService.ListShippersAsync(new PaginationSearchInput { PageSize = 100 });
+            if (string.IsNullOrWhiteSpace(recipientName)) return false;
+            if (string.IsNullOrWhiteSpace(recipientPhone)) return false;
+            if (string.IsNullOrWhiteSpace(deliveryAddress)) return false;
+            if (string.IsNullOrWhiteSpace(deliveryProvince)) return false;
+            if (!shipperID.HasValue || shipperID.Value <= 0) return false;
+            return true;
+        };
+
+        if (!ValidateDeliveryInfo())
+        {
+            if (string.IsNullOrWhiteSpace(recipientName)) 
+                ModelState.AddModelError(nameof(recipientName), "Họ tên người nhận là bắt buộc.");
+            if (string.IsNullOrWhiteSpace(recipientPhone)) 
+                ModelState.AddModelError(nameof(recipientPhone), "Số điện thoại liên lạc không được để trống.");
+            if (string.IsNullOrWhiteSpace(deliveryAddress)) 
+                ModelState.AddModelError(nameof(deliveryAddress), "Địa chỉ nhận hàng không hợp lệ.");
+            if (string.IsNullOrWhiteSpace(deliveryProvince)) 
+                ModelState.AddModelError(nameof(deliveryProvince), "Chưa chọn khu vực tỉnh/thành phố.");
+            if (!shipperID.HasValue || shipperID.Value <= 0) 
+                ModelState.AddModelError(nameof(shipperID), "Vui lòng lựa chọn đơn vị vận chuyển.");
+
+            ViewBag.Cart = itemsToCheckout;
+            ViewBag.Shippers = await PartnerDataService.ListShippersAsync(new PaginationSearchInput { PageSize = 100 }).ConfigureAwait(false);
             ViewData["ValidationErrors"] = ModelState.ToDictionary(
                 k => k.Key,
                 v => v.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
             );
-            return View("Checkout", await PartnerDataService.GetCustomerAsync(customerId));
+            return View("Checkout", await PartnerDataService.GetCustomerAsync(cstmrId).ConfigureAwait(false));
         }
 
-        // Lưu vết thông tin đơn hàng
-        var shippingInfo = $"{recipientName} | {recipientPhone} | {deliveryAddress}";
-        var newOrder = new Order
+        var composedDeliveryInfo = $"{recipientName} | {recipientPhone} | {deliveryAddress}";
+        var orderRecord = new Order
         {
-            CustomerID = customerId,
-            DeliveryAddress = shippingInfo,
+            CustomerID = cstmrId,
+            DeliveryAddress = composedDeliveryInfo,
             DeliveryProvince = deliveryProvince,
             ShipperID = shipperID,
             OrderTime = DateTime.Now,
             Status = OrderStatusEnum.New
         };
 
-        int createdOrderId = await SalesDataService.AddOrderAsync(newOrder);
+        int newOrderId = await SalesDataService.AddOrderAsync(orderRecord).ConfigureAwait(false);
 
-        // Đổ dữ liệu chi tiết các mặt hàng đã mua
-        foreach (var item in purchaseItems)
+        foreach (var lineItem in itemsToCheckout)
         {
             await SalesDataService.AddDetailAsync(new OrderDetail
             {
-                OrderID = createdOrderId,
-                ProductID = item.ProductID,
-                Quantity = item.Quantity,
-                SalePrice = item.Price
-            });
+                OrderID = newOrderId,
+                ProductID = lineItem.ProductID,
+                Quantity = lineItem.Quantity,
+                SalePrice = lineItem.Price
+            }).ConfigureAwait(false);
         }
 
-        // Cập nhật lại giỏ hàng (loại bỏ các món đã được thanh toán)
-        var totalBasket = LoadBasket();
-        foreach (var item in purchaseItems)
-        {
-            var matchInBasket = totalBasket.FirstOrDefault(x => x.ProductID == item.ProductID);
-            if (matchInBasket != null) totalBasket.Remove(matchInBasket);
-        }
-        PersistBasket(totalBasket);
+        var currentCartItems = LoadBasket();
+        var remainingItems = currentCartItems.Where(c => !itemsToCheckout.Any(ch => ch.ProductID == c.ProductID)).ToList();
+        PersistBasket(remainingItems);
         Response.Cookies.Delete("selectedCartItems");
 
-        TempData["SuccessMessage"] = $"Giao dịch thành công! Đơn hàng #{createdOrderId} đang chờ hệ thống xử lý.";
-        return RedirectToAction("TrackOrder", "Order", new { id = createdOrderId });
+        TempData["SuccessMessage"] = $"Giao dịch thành công! Đơn hàng #{newOrderId} đang chờ hệ thống xử lý.";
+        return RedirectToAction("TrackOrder", "Order", new { id = newOrderId });
     }
 
     /// <summary>
-    /// Đồng bộ số lượng mặt hàng thực tế với giao diện người dùng.
+    /// Trả về số lượng mục hiện đang có trong giỏ hàng dưới dạng JSON response. Phương thức này 
+    /// được gọi qua AJAX từ giao diện người dùng để cập nhật dynamically số lượng trong biểu tượng
+    /// giỏ hàng ở header/navbar. Nếu người dùng chưa xác thực, số lượng trả về là 0.
     /// </summary>
     public IActionResult FetchCartCount()
     {

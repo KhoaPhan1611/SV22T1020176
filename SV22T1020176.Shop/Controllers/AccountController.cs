@@ -15,7 +15,10 @@ namespace SV22T1020176.Shop.Controllers;
 public class AccountController : Controller
 {
     /// <summary>
-    /// Hiển thị giao diện khởi tạo tài khoản mới.
+    /// Chuẩn bị và hiển thị biểu mẫu đăng ký tài khoản khách hàng mới cho người dùng chưa có tài khoản.
+    /// Phương thức HTTP GET này trả về giao diện HTML chứa các trường nhập liệu bắt buộc như 
+    /// tên đầy đủ, email, số điện thoại, tỉnh/thành phố, và mật khẩu. URL quay lại (returnUrl)
+    /// được lưu trữ để chuyển hướng người dùng đến trang mong muốn sau khi hoàn tất đăng ký.
     /// </summary>
     [HttpGet]
     public IActionResult CreateAccount(string returnUrl = "")
@@ -25,56 +28,90 @@ public class AccountController : Controller
     }
 
     /// <summary>
-    /// Xử lý logic đăng ký thành viên mới.
+    /// Nhận dữ liệu biểu mẫu từ người dùng, thực hiện xác thực toàn diện bao gồm kiểm tra định dạng email,
+    /// độ phức tạp mật khẩu, tính hợp lệ số điện thoại, và sự tồn tại duy nhất của địa chỉ email trong cơ sở dữ liệu.
+    /// Nếu tất cả các điều kiện xác thực đều thỏa mãn, hệ thống tạo bản ghi khách hàng mới trong cơ sở dữ liệu
+    /// và gửi hướng dẫn người dùng tới trang đăng nhập để hoàn tất quy trình xác thực tài khoản.
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> CreateAccount(Customer registrationInfo, string confirmPassword, string returnUrl = "")
     {
-        // Kiểm soát dữ liệu đầu vào: Tên và Email
-        if (string.IsNullOrWhiteSpace(registrationInfo.CustomerName))
-            ModelState.AddModelError(nameof(registrationInfo.CustomerName), "Vui lòng nhập họ tên đầy đủ.");
-        else if (registrationInfo.CustomerName.Trim().Length < 2)
-            ModelState.AddModelError(nameof(registrationInfo.CustomerName), "Danh tính phải chứa tối thiểu 2 ký tự.");
-
-        if (string.IsNullOrWhiteSpace(registrationInfo.Email))
-            ModelState.AddModelError(nameof(registrationInfo.Email), "Địa chỉ thư điện tử không được bỏ trống.");
-        else if (!registrationInfo.Email.Contains('@') || !registrationInfo.Email.Contains('.'))
-            ModelState.AddModelError(nameof(registrationInfo.Email), "Định dạng email không hợp lệ.");
-
-        // Kiểm soát dữ liệu đầu vào: Liên lạc và Khu vực
-        if (string.IsNullOrWhiteSpace(registrationInfo.Phone))
+        Func<bool> ValidateAccountData = () =>
         {
-            ModelState.AddModelError(nameof(registrationInfo.Phone), "Số điện thoại là thông tin bắt buộc.");
-        }
-        else
-        {
-            var cleanPhone = new string(registrationInfo.Phone.Where(char.IsDigit).ToArray());
-            if (cleanPhone.Length < 10 || cleanPhone.Length > 11)
+            // Xác thực tên người dùng
+            if (string.IsNullOrWhiteSpace(registrationInfo.CustomerName))
+            {
+                ModelState.AddModelError(nameof(registrationInfo.CustomerName), "Vui lòng nhập họ tên đầy đủ.");
+                return false;
+            }
+            if (registrationInfo.CustomerName.Trim().Length < 2)
+            {
+                ModelState.AddModelError(nameof(registrationInfo.CustomerName), "Danh tính phải chứa tối thiểu 2 ký tự.");
+                return false;
+            }
+
+            // Xác thực email
+            if (string.IsNullOrWhiteSpace(registrationInfo.Email))
+            {
+                ModelState.AddModelError(nameof(registrationInfo.Email), "Địa chỉ thư điện tử không được bỏ trống.");
+                return false;
+            }
+            if (!registrationInfo.Email.Contains('@') || !registrationInfo.Email.Contains('.'))
+            {
+                ModelState.AddModelError(nameof(registrationInfo.Email), "Định dạng email không hợp lệ.");
+                return false;
+            }
+
+            // Xác thực số điện thoại
+            if (string.IsNullOrWhiteSpace(registrationInfo.Phone))
+            {
+                ModelState.AddModelError(nameof(registrationInfo.Phone), "Số điện thoại là thông tin bắt buộc.");
+                return false;
+            }
+            var phoneDigits = new string(registrationInfo.Phone.Where(c => char.IsDigit(c)).ToArray());
+            if (phoneDigits.Length is < 10 or > 11)
+            {
                 ModelState.AddModelError(nameof(registrationInfo.Phone), "Độ dài số điện thoại không hợp lệ (10-11 số).");
+                return false;
+            }
+
+            // Xác thực tỉnh thành
+            if (string.IsNullOrWhiteSpace(registrationInfo.Province))
+            {
+                ModelState.AddModelError(nameof(registrationInfo.Province), "Chưa xác định Tỉnh/Thành phố cư trú.");
+                return false;
+            }
+
+            // Xác thực mật khẩu
+            if (string.IsNullOrEmpty(registrationInfo.Password))
+            {
+                ModelState.AddModelError(nameof(registrationInfo.Password), "Cần thiết lập mật khẩu truy cập.");
+                return false;
+            }
+            if (registrationInfo.Password.Length < 6)
+            {
+                ModelState.AddModelError(nameof(registrationInfo.Password), "Mật khẩu quá ngắn (yêu cầu từ 6 ký tự).");
+                return false;
+            }
+            if (registrationInfo.Password != confirmPassword)
+            {
+                ModelState.AddModelError(string.Empty, "Mật khẩu xác nhận không trùng khớp với mật khẩu đã nhập.");
+                return false;
+            }
+
+            return true;
+        };
+
+        if (!ValidateAccountData())
+        {
+            ViewBag.ReturnUrl = returnUrl;
+            return View("Register", registrationInfo);
         }
 
-        if (string.IsNullOrWhiteSpace(registrationInfo.Province))
-            ModelState.AddModelError(nameof(registrationInfo.Province), "Chưa xác định Tỉnh/Thành phố cư trú.");
-
-        // Kiểm soát dữ liệu đầu vào: Bảo mật mật khẩu
-        if (string.IsNullOrEmpty(registrationInfo.Password))
-            ModelState.AddModelError(nameof(registrationInfo.Password), "Cần thiết lập mật khẩu truy cập.");
-        else if (registrationInfo.Password.Length < 6)
-            ModelState.AddModelError(nameof(registrationInfo.Password), "Mật khẩu quá ngắn (yêu cầu từ 6 ký tự).");
-
-        if (registrationInfo.Password != confirmPassword)
-            ModelState.AddModelError(string.Empty, "Mật khẩu xác nhận không trùng khớp với mật khẩu đã nhập.");
-
-        // Kiểm tra tính độc nhất của email trong hệ thống
-        if (!string.IsNullOrEmpty(registrationInfo.Email))
+        bool emailExists = await PartnerDataService.ValidateCustomerEmailAsync(registrationInfo.Email).ConfigureAwait(false);
+        if (!emailExists)
         {
-            bool isAvailable = await PartnerDataService.ValidateCustomerEmailAsync(registrationInfo.Email);
-            if (!isAvailable)
-                ModelState.AddModelError(nameof(registrationInfo.Email), "Hệ thống ghi nhận email này đã tồn tại. Thử email khác.");
-        }
-
-        if (!ModelState.IsValid)
-        {
+            ModelState.AddModelError(nameof(registrationInfo.Email), "Hệ thống ghi nhận email này đã tồn tại. Thử email khác.");
             ViewBag.ReturnUrl = returnUrl;
             return View("Register", registrationInfo);
         }
@@ -83,13 +120,13 @@ public class AccountController : Controller
         {
             registrationInfo.ContactName = registrationInfo.CustomerName;
             registrationInfo.IsLocked = false;
-            await PartnerDataService.AddCustomerAsync(registrationInfo);
-
+            
+            await PartnerDataService.AddCustomerAsync(registrationInfo).ConfigureAwait(false);
             TempData["SuccessMessage"] = "Khởi tạo tài khoản thành công! Hãy thực hiện đăng nhập lần đầu.";
 
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                return RedirectToAction(nameof(Authenticate), new { returnUrl });
-            return RedirectToAction(nameof(Authenticate));
+            return Url.IsLocalUrl(returnUrl) && !string.IsNullOrEmpty(returnUrl) 
+                ? RedirectToAction(nameof(Authenticate), new { returnUrl }) 
+                : RedirectToAction(nameof(Authenticate));
         }
         catch
         {
@@ -100,7 +137,10 @@ public class AccountController : Controller
     }
 
     /// <summary>
-    /// Hiển thị giao diện đăng nhập hệ thống.
+    /// Cung cấp giao diện biểu mẫu đăng nhập cho người dùng và khách truy cập không xác thực.
+    /// Trang này chứa các trường nhập liệu cho email/tên người dùng và mật khẩu, cùng với tùy chọn
+    /// "ghi nhớ thông tin đăng nhập" để duy trì phiên làm việc kéo dài hơn. URL chuyển hướng
+    /// được truyền qua URL để quay lại trang ban đầu sau khi xác thực thành công.
     /// </summary>
     [HttpGet]
     public IActionResult Authenticate(string returnUrl = "")
@@ -110,166 +150,220 @@ public class AccountController : Controller
     }
 
     /// <summary>
-    /// Xác thực thông tin người dùng và thiết lập phiên làm việc.
+    /// Tiếp nhận thông tin xác thực từ người dùng bao gồm email/tên tài khoản và mật khẩu, gọi đến
+    /// dịch vụ bảo mật để xác minh thông tin. Nếu xác thực thành công, phương thức kiểm tra trạng thái
+    /// hoạt động của tài khoản (không bị khóa/vô hiệu hóa). Sau đó, thiết lập cookie xác thực và phiên
+    /// làm việc với tùy chọn "ghi nhớ" để duy trì đăng nhập trong 30 ngày hoặc 24 giờ theo cài đặt.
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> Authenticate(string email, string password, bool rememberMe = false, string returnUrl = "")
     {
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+        if (string.IsNullOrEmpty(email?.Trim()) || string.IsNullOrEmpty(password?.Trim()))
         {
             ModelState.AddModelError(string.Empty, "Yêu cầu nhập đầy đủ chứng chỉ đăng nhập (Email & Mật khẩu).");
             return View("Login");
         }
 
-        var authorizedMember = await SecurityDataService.AuthorizeAsync(email, password, UserTypes.Customer);
-        if (authorizedMember == null)
+        var credentialCheckResult = await SecurityDataService.AuthorizeAsync(email, password, UserTypes.Customer).ConfigureAwait(false);
+        if (credentialCheckResult is null)
         {
             ModelState.AddModelError(string.Empty, "Chứng chỉ không đúng hoặc tài khoản không tồn tại.");
             ViewData["Email"] = email;
             return View("Login");
         }
 
-        // Kiểm tra tình trạng hoạt động của tài khoản
-        var memberProfile = await PartnerDataService.GetCustomerAsync(int.Parse(authorizedMember.UserID));
-        if (memberProfile?.IsLocked == true)
+        if (!int.TryParse(credentialCheckResult.UserID, out int customerId))
+        {
+            ModelState.AddModelError(string.Empty, "Lỗi hệ thống khi xác minh tài khoản.");
+            return View("Login");
+        }
+
+        var profileData = await PartnerDataService.GetCustomerAsync(customerId).ConfigureAwait(false);
+        if (profileData?.IsLocked ?? false)
         {
             ModelState.AddModelError(string.Empty, "Tài khoản hiện đang bị đình chỉ quyền truy cập.");
             ViewData["Email"] = email;
             return View("Login");
         }
 
-        // Khởi tạo cookie danh tính (Identity Cookie)
-        var identityData = new WebUserData
+        var sessionIdentity = new WebUserData
         {
-            UserId = authorizedMember.UserID,
-            UserName = authorizedMember.Email,
-            DisplayName = authorizedMember.FullName,
-            Photo = authorizedMember.Photo,
+            UserId = credentialCheckResult.UserID,
+            UserName = credentialCheckResult.Email,
+            DisplayName = credentialCheckResult.FullName,
+            Photo = credentialCheckResult.Photo,
             Roles = new List<string> { "customer" }
         };
 
-        var signinSettings = new AuthenticationProperties
+        var authProps = new AuthenticationProperties
         {
             IsPersistent = rememberMe,
-            ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(30) : DateTimeOffset.UtcNow.AddHours(24)
+            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(rememberMe ? 720 : 24)
         };
 
-        await HttpContext.SignInAsync(identityData.CreatePrincipal(), signinSettings);
+        await HttpContext.SignInAsync(sessionIdentity.CreatePrincipal(), authProps).ConfigureAwait(false);
 
-        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (Url.IsLocalUrl(returnUrl) && returnUrl.StartsWith("/"))
             return Redirect(returnUrl);
+        
         return RedirectToAction("Index", "Home");
     }
 
     /// <summary>
-    /// Truy xuất và hiển thị thông tin hồ sơ cá nhân của thành viên.
+    /// Lấy ID người dùng từ phiên xác thực hiện tại, truy vấn cơ sở dữ liệu để lấy thông tin
+    /// hồ sơ khách hàng đầy đủ bao gồm tên, email, số điện thoại, địa chỉ giao hàng mặc định, và tỉnh/
+    /// thành phố cư trú. Sau đó hiển thị các thông tin này trên giao diện hồ sơ cá nhân để người dùng
+    /// có thể xem lại các chi tiết cá nhân của mình. Yêu cầu người dùng phải đăng nhập để truy cập.
     /// </summary>
     [Authorize]
     [HttpGet]
     public async Task<IActionResult> MyProfile()
     {
-        var customerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(customerIdStr, out int currentId)) return RedirectToAction(nameof(Authenticate));
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdStr, out int currentId)) 
+            return RedirectToAction(nameof(Authenticate));
 
-        var data = await PartnerDataService.GetCustomerAsync(currentId);
-        if (data == null) return RedirectToAction(nameof(Authenticate));
+        var profileData = await PartnerDataService.GetCustomerAsync(currentId).ConfigureAwait(false);
+        if (profileData is null) 
+            return RedirectToAction(nameof(Authenticate));
 
-        return View("Profile", data);
+        return View("Profile", profileData);
     }
 
     /// <summary>
-    /// Xử lý cập nhật thông tin định danh của thành viên.
+    /// Chấp nhận dữ liệu biểu mẫu cập nhật từ khách hàng được xác thực, thực hiện xác thực dữ liệu
+    /// bao gồm kiểm tra tên chỉ chứa ký tự chữ cái, độ dài tên tối thiểu 2 ký tự, định dạng số điện thoại,
+    /// và địa chỉ bắt buộc. Cập nhật các trường được phép vào cơ sở dữ liệu và làm mới cookie xác thực
+    /// với thông tin cá nhân mới để phản ánh ngay lập tức trên giao diện người dùng.
     /// </summary>
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> ReviseProfile(Customer inputModel)
     {
-        var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(uid, out int accountId))
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out int acctId))
             return Json(new { success = false, message = "Lỗi xác thực: Vui lòng kết nối lại hệ thống." });
 
-        var member = await PartnerDataService.GetCustomerAsync(accountId);
-        if (member == null) return Json(new { success = false, message = "Thông tin không khả dụng." });
+        var existingMember = await PartnerDataService.GetCustomerAsync(acctId).ConfigureAwait(false);
+        if (existingMember is null) 
+            return Json(new { success = false, message = "Thông tin không khả dụng." });
 
-        // Kiểm soát cú pháp tên người dùng
-        if (string.IsNullOrWhiteSpace(inputModel.CustomerName))
-            return Json(new { success = false, message = "Họ tên là trường thông tin thiết yếu.", field = nameof(inputModel.CustomerName) });
+        var nameRegex = new System.Text.RegularExpressions.Regex(@"^[\p{L}\s]+$");
         
-        var namingPattern = new System.Text.RegularExpressions.Regex(@"^[\p{L} ]+$");
-        if (!namingPattern.IsMatch(inputModel.CustomerName))
-            return Json(new { success = false, message = "Họ tên chỉ cho phép ký tự chữ cái.", field = nameof(inputModel.CustomerName) });
-
-        if (inputModel.CustomerName.Trim().Length < 2)
-            return Json(new { success = false, message = "Họ tên quá ngắn.", field = nameof(inputModel.CustomerName) });
-
-        if (!string.IsNullOrEmpty(inputModel.Phone))
+        Func<bool> ValidateUpdates = () =>
         {
-            var rawDigits = new string(inputModel.Phone.Where(char.IsDigit).ToArray());
-            if (rawDigits.Length < 10 || rawDigits.Length > 11 || rawDigits.Length != inputModel.Phone.Length)
-                return Json(new { success = false, message = "Định dạng số điện thoại chưa chuẩn xác.", field = nameof(inputModel.Phone) });
-        }
-
-        member.CustomerName = inputModel.CustomerName.Trim();
-        member.ContactName = inputModel.CustomerName.Trim();
-        member.Phone = inputModel.Phone;
-        member.Province = inputModel.Province;
-        member.Address = inputModel.Address;
-
-        bool updated = await PartnerDataService.UpdateCustomerAsync(member);
-        if (updated)
-        {
-            var newIdentity = new WebUserData
+            if (string.IsNullOrWhiteSpace(inputModel.CustomerName))
+                return false;
+            if (inputModel.CustomerName.Trim().Length < 2)
+                return false;
+            if (!nameRegex.IsMatch(inputModel.CustomerName))
+                return false;
+            if (!string.IsNullOrEmpty(inputModel.Phone))
             {
-                UserId = member.CustomerID.ToString(),
-                UserName = member.Email,
-                DisplayName = member.CustomerName,
-                Photo = User.FindFirst("Photo")?.Value ?? string.Empty,
-                Roles = new List<string> { "customer" }
-            };
-            await HttpContext.SignInAsync(newIdentity.CreatePrincipal());
-            return Json(new { success = true, message = "Thông tin của bạn đã được cập nhật thành công!" });
+                var justDigits = new string(inputModel.Phone.Where(c => char.IsDigit(c)).ToArray());
+                if (justDigits.Length is < 10 or > 11 || justDigits.Length != inputModel.Phone.Length)
+                    return false;
+            }
+            return true;
+        };
+
+        if (!ValidateUpdates())
+        {
+            return Json(new 
+            { 
+                success = false, 
+                message = "Thông tin cập nhật không hợp lệ. Vui lòng kiểm tra lại.",
+                field = nameof(inputModel.CustomerName)
+            });
         }
 
-        return Json(new { success = false, message = "Không thể ghi nhận thay đổi lúc này." });
+        existingMember.CustomerName = inputModel.CustomerName?.Trim() ?? string.Empty;
+        existingMember.ContactName = existingMember.CustomerName;
+        existingMember.Phone = inputModel.Phone ?? string.Empty;
+        existingMember.Province = inputModel.Province ?? string.Empty;
+        existingMember.Address = inputModel.Address ?? string.Empty;
+
+        bool updateSuccess = await PartnerDataService.UpdateCustomerAsync(existingMember).ConfigureAwait(false);
+        
+        if (!updateSuccess)
+            return Json(new { success = false, message = "Không thể ghi nhận thay đổi lúc này." });
+
+        var updatedIdentity = new WebUserData
+        {
+            UserId = existingMember.CustomerID.ToString(),
+            UserName = existingMember.Email,
+            DisplayName = existingMember.CustomerName,
+            Photo = User.FindFirst("Photo")?.Value ?? string.Empty,
+            Roles = new List<string> { "customer" }
+        };
+        
+        await HttpContext.SignInAsync(updatedIdentity.CreatePrincipal()).ConfigureAwait(false);
+        return Json(new { success = true, message = "Thông tin của bạn đã được cập nhật thành công!" });
     }
 
     /// <summary>
-    /// Thực hiện thay đổi mật khẩu đăng nhập của người dùng.
+    /// Cho phép người dùng được xác thực thay đổi mật khẩu bằng cách nhập mật khẩu hiện tại để xác minh
+    /// quyền sở hữu, mật khẩu mới mong muốn, và xác nhận mật khẩu mới. Phương thức xác thực mật khẩu cũ
+    /// thông qua dịch vụ bảo mật, kiểm tra độ phức tạp mật khẩu mới (tối thiểu 6 ký tự), và đảm bảo hai
+    /// trường mật khẩu mới khớp với nhau trước khi cập nhật vào cơ sở dữ liệu.
     /// </summary>
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> ResetPassphrase(string curPassword, string newPassword, string confirmNewPassword)
     {
-        if (string.IsNullOrEmpty(curPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmNewPassword))
+        var requiredFields = new[] { curPassword, newPassword, confirmNewPassword };
+        if (requiredFields.Any(f => string.IsNullOrEmpty(f?.Trim())))
             return Json(new { success = false, message = "Vui lòng cung cấp đầy đủ các chuỗi bảo mật." });
 
         if (newPassword != confirmNewPassword)
-            return Json(new { success = false, message = "Mật khẩu xác nhận mới không trùng khớp.", field = "confirmNewPassword" });
+            return Json(new 
+            { 
+                success = false, 
+                message = "Mật khẩu xác nhận mới không trùng khớp.",
+                field = "confirmNewPassword" 
+            });
 
         if (newPassword.Length < 6)
-            return Json(new { success = false, message = "Mật khẩu mới yêu cầu độ phức tạp cao hơn (>=6 ký tự).", field = "newPassword" });
+            return Json(new 
+            { 
+                success = false, 
+                message = "Mật khẩu mới yêu cầu độ phức tạp cao hơn (>=6 ký tự).",
+                field = "newPassword" 
+            });
 
-        var memberEmail = User.Identity?.Name;
-        if (string.IsNullOrEmpty(memberEmail)) return Json(new { success = false, message = "Phiên làm việc hết hạn." });
+        var principalEmail = User.Identity?.Name;
+        if (string.IsNullOrEmpty(principalEmail))
+            return Json(new { success = false, message = "Phiên làm việc hết hạn." });
 
-        var authCheck = await SecurityDataService.AuthorizeAsync(memberEmail, curPassword, UserTypes.Customer);
-        if (authCheck == null)
-            return Json(new { success = false, message = "Mật khẩu cũ không đúng.", field = "curPassword" });
+        var passwordValidation = await SecurityDataService.AuthorizeAsync(principalEmail, curPassword, UserTypes.Customer).ConfigureAwait(false);
+        if (passwordValidation is null)
+            return Json(new 
+            { 
+                success = false, 
+                message = "Mật khẩu cũ không đúng.",
+                field = "curPassword" 
+            });
 
-        bool isReset = await SecurityDataService.ChangePasswordAsync(memberEmail, newPassword, UserTypes.Customer);
-        return Json(new { 
-            success = isReset, 
-            message = isReset ? "Mật khẩu của bạn đã được đổi mới thành công!" : "Xảy ra lỗi khi tái thiết lập mật khẩu." 
+        bool passwordUpdateResult = await SecurityDataService.ChangePasswordAsync(principalEmail, newPassword, UserTypes.Customer).ConfigureAwait(false);
+        
+        return Json(new 
+        { 
+            success = passwordUpdateResult, 
+            message = passwordUpdateResult 
+                ? "Mật khẩu của bạn đã được đổi mới thành công!" 
+                : "Xảy ra lỗi khi tái thiết lập mật khẩu." 
         });
     }
 
     /// <summary>
-    /// Thực hiện việc hủy phiên làm việc và đăng xuất.
+    /// Kết thúc phiên làm việc của người dùng hiện tại bằng cách xóa toàn bộ dữ liệu giỏ hàng
+    /// từ session, xóa cookie xác thực, và hủy quyền truy cập. Sau khi hoàn tất các bước đăng xuất,
+    /// người dùng được chuyển hướng về trang chủ như một khách vô danh không xác thực.
     /// </summary>
     public async Task<IActionResult> SignOff()
     {
         CartSessionHelper.ClearCart(HttpContext);
-        await HttpContext.SignOutAsync();
+        await HttpContext.SignOutAsync().ConfigureAwait(false);
         return RedirectToAction("Index", "Home");
     }
 }

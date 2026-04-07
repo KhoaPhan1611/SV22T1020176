@@ -8,14 +8,20 @@ using SV22T1020176.Models.Common;
 namespace SV22T1020176.Shop.Controllers;
 
 /// <summary>
-/// Controller xử lý các luồng chính của trang chủ và tìm kiếm sản phẩm.
+/// Bộ điều khiển quản lý giao diện trang chủ (landing page) của cửa hàng trực tuyến và các tính năng
+/// tìm kiếm/lọc sản phẩm liên quan. Cấp quyền truy cập đến danh sách sản phẩm với các bộ lọc như
+/// danh mục, khoảng giá, từ khóa tìm kiếm, với hỗ trợ phân trang. Tích hợp ajax để người dùng
+/// có thể lọc sản phẩm động mà không cần tải lại toàn bộ trang.
 /// </summary>
 public class HomeController : Controller
 {
     private const int DEFAULT_ITEM_COUNT = 12;
 
     /// <summary>
-    /// Hiển thị giao diện chính của cửa hàng (Landing page).
+    /// Chuẩn bị và hiển thị trang chủ chính của cửa hàng với danh sách sản phẩm mặc định được phân trang.
+    /// Phương thức truy vấn danh sách các danh mục sản phẩm, xây dựng tiêu chí tìm kiếm dựa trên
+    /// tham số từ URL bao gồm trang, danh mục, từ khóa tìm kiếm, và khoảng giá, sau đó truyền
+    /// dữ liệu này đến view để hiển thị grid sản phẩm cùng các bộ lọc sidebar.
     /// </summary>
     public async Task<IActionResult> Index(
         int page = 1,
@@ -24,29 +30,23 @@ public class HomeController : Controller
         decimal minPrice = 0,
         decimal maxPrice = 0)
     {
-        // Thu thập danh sách phân loại (Category) cho thanh lọc
-        var filterCategories = await CatalogDataService.ListCategoriesAsync(
-            new PaginationSearchInput { 
-                Page = 1, 
-                PageSize = 100 
-            });
+        var categoryList = await CatalogDataService.ListCategoriesAsync(
+            new PaginationSearchInput { Page = 1, PageSize = 100 }).ConfigureAwait(false);
 
-        // Xây dựng tiêu chí tìm kiếm sản phẩm dựa trên input người dùng
-        var searchInput = new ProductSearchInput
+        var searchParams = new ProductSearchInput
         {
-            Page = page,
+            Page = Math.Max(1, page),
             PageSize = DEFAULT_ITEM_COUNT,
-            SearchValue = searchValue ?? string.Empty,
-            CategoryID = categoryID,
-            MinPrice = minPrice,
-            MaxPrice = maxPrice
+            SearchValue = searchValue?.Trim() ?? string.Empty,
+            CategoryID = Math.Max(0, categoryID),
+            MinPrice = Math.Max(0m, minPrice),
+            MaxPrice = Math.Max(0m, maxPrice)
         };
         
-        var productResult = await CatalogDataService.ListProductsAsync(searchInput);
+        var productList = await CatalogDataService.ListProductsAsync(searchParams).ConfigureAwait(false);
 
-        // Chuyển đổi dữ liệu ra View thông qua ViewBag
-        ViewBag.Categories = filterCategories;
-        ViewBag.ProductResult = productResult;
+        ViewBag.Categories = categoryList;
+        ViewBag.ProductResult = productList;
         ViewBag.CurrentCategoryID = categoryID;
         ViewBag.CurrentSearchValue = searchValue;
         ViewBag.CurrentMinPrice = minPrice;
@@ -56,26 +56,23 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Trả về tập hợp sản phẩm dựa trên tham số lọc (Sử dụng AJAX).
+    /// Tiếp nhận yêu cầu AJAX từ giao diện người dùng với các tiêu chí lọc như danh mục, từ khóa tìm kiếm,
+    /// khoảng giá bắt đầu và kết thúc. Xác thực dữ liệu để đảm bảo giá kết thúc cao hơn giá bắt đầu, 
+    /// có tiêu chí giá hợp lệ (không âm). Truy vấn cơ sở dữ liệu với các tiêu chí đã chuẩn hóa và trả về
+    /// PartialView chứa grid sản phẩm được lọc để JavaScript cập nhật phần giao diện mà không tải lại trang.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> FilterProducts(ProductSearchInput criteria)
     {
-        // Xử lý logic validation cho mức giá: giá kết thúc (max) không được thấp hơn giá bắt đầu (min)
-        if (criteria.MaxPrice > 0 && criteria.MinPrice > 0 && criteria.MaxPrice < criteria.MinPrice)
-        {
+        if ((criteria.MaxPrice > 0 && criteria.MinPrice > 0) && criteria.MaxPrice < criteria.MinPrice)
             criteria.MaxPrice = 0;
-        }
 
-        // Đảm bảo các chỉ số lọc về giá là không âm
         criteria.MinPrice = Math.Max(0, criteria.MinPrice);
         criteria.MaxPrice = Math.Max(0, criteria.MaxPrice);
-
         criteria.PageSize = DEFAULT_ITEM_COUNT;
         
-        var response = await CatalogDataService.ListProductsAsync(criteria);
-        
-        return PartialView("_ProductGrid", response);
+        var filteredResult = await CatalogDataService.ListProductsAsync(criteria).ConfigureAwait(false);
+        return PartialView("_ProductGrid", filteredResult);
     }
 
     public IActionResult Privacy() => View();
